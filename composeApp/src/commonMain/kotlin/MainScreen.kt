@@ -31,6 +31,11 @@ class MainScreen(private val modifier: Modifier = Modifier) : Screen {
                     Text(text = "Random Image")
                 }
             }
+            item {
+                Button(onClick = { navigator?.push(BreedImagesScreen())}) {
+                    Text(text = "Breed Images")
+                }
+            }
         }
     }
 }
