@@ -12,7 +12,7 @@ fun App() {
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colors.background
         ) {
-            Navigator(screen = ListAllBreedsScreen())
+            Navigator(screen = MainScreen())
         }
     }
 }
