@@ -1,6 +1,3 @@
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,7 +11,7 @@ import com.rumosoft.librarydogapi.DogApi
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.launch
 
-class ListAllBreedsScreen(val modifier: Modifier = Modifier) : Screen {
+class RandomImageScreen(val modifier: Modifier = Modifier) : Screen {
     @Composable
     override fun Content() {
 
@@ -23,7 +20,7 @@ class ListAllBreedsScreen(val modifier: Modifier = Modifier) : Screen {
             LaunchedEffect(true) {
                 scope.launch {
                     text = try {
-                        val result = DogApi.createDefault().breeds()
+                        val result = DogApi.createDefault().randomImage()
                         Napier.d("JEP - result: $result")
                         result.toString()
                     } catch (e: Exception) {
