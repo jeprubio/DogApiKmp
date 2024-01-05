@@ -36,6 +36,11 @@ class MainScreen(private val modifier: Modifier = Modifier) : Screen {
                     Text(text = "Breed Images")
                 }
             }
+            item {
+                Button(onClick = { navigator?.push(ListSubBreedsScreen())}) {
+                    Text(text = "List Sub Breeds")
+                }
+            }
         }
     }
 }
