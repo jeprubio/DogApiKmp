@@ -2,15 +2,28 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.serialization)
+    id("maven-publish")
+}
+
+group = "com.rumosoft.dogapi"
+version = "0.8"
+
+publishing {
+    repositories {
+        mavenLocal()
+    }
 }
 
 kotlin {
+    // withSourcesJar(publish = false)
+
     androidTarget {
         compilations.all {
             kotlinOptions {
                 jvmTarget = "1.8"
             }
         }
+        publishLibraryVariants("release")
     }
     
     listOf(
