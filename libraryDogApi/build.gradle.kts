@@ -70,7 +70,6 @@ android {
 
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
-        targetSdk = libs.versions.android.targetSdk.get().toInt()
     }
     packaging {
         resources {
@@ -86,5 +85,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+    testOptions.targetSdk = libs.versions.android.targetSdk.get().toInt()
 }
 
