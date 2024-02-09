@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.serialization)
     id("maven-publish")
+    alias(libs.plugins.mokoswift)
 }
 
 group = "com.rumosoft.dogapi"
