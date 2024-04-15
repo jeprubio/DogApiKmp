@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.serialization)
     id("maven-publish")
-    alias(libs.plugins.mokoswift)
+    alias(libs.plugins.kmmBridge)
 }
 
 group = "com.rumosoft.dogapi"
@@ -26,7 +26,7 @@ kotlin {
         }
         publishLibraryVariants("release")
     }
-    
+
     listOf(
         iosX64(),
         iosArm64(),
@@ -89,3 +89,10 @@ android {
     testOptions.targetSdk = libs.versions.android.targetSdk.get().toInt()
 }
 
+kmmbridge {
+    frameworkName.set("LibraryDogApi")
+
+    mavenPublishArtifacts()
+    spm()
+    //cocoapods("git@github.com:touchlab/PublicPodSpecs.git")
+}
