@@ -25,36 +25,48 @@ class MainScreen(private val modifier: Modifier = Modifier) : Screen {
                         Text(text = "Dog Api")
                     }
                 )
-            }
-        ) { padding ->
-            LazyColumn(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-                contentPadding = PaddingValues(16.dp),
-                modifier = modifier.fillMaxSize().padding(padding).padding(16.dp)
-            ) {
-                item {
-                    Button(onClick = { navigator?.push(ListAllBreedsScreen()) }) {
-                        Text(text = "List All Breeds")
-                    }
-                }
-                item {
-                    Button(onClick = { navigator?.push(RandomImageScreen()) }) {
-                        Text(text = "Random Image")
-                    }
-                }
-                item {
-                    Button(onClick = { navigator?.push(BreedImagesScreen()) }) {
-                        Text(text = "Breed Images")
-                    }
-                }
-                item {
-                    Button(onClick = { navigator?.push(ListSubBreedsScreen()) }) {
-                        Text(text = "List Sub Breeds")
-                    }
-                }
-            }
+            },
+            modifier = modifier
+        ) { paddingValues ->
+            MainScreenContent(
+                padding = paddingValues,
+                onNewScreenSelected = { navigator?.push(it) }
+            )
         }
     }
 }
 
+@Composable
+internal fun MainScreenContent(
+    padding: PaddingValues = PaddingValues(),
+    modifier: Modifier = Modifier,
+    onNewScreenSelected: (Screen) -> Unit = {}
+) {
+    LazyColumn(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        contentPadding = PaddingValues(16.dp),
+        modifier = modifier.fillMaxSize().padding(padding).padding(16.dp)
+    ) {
+        item {
+            Button(onClick = { onNewScreenSelected(ListAllBreedsScreen()) }) {
+                Text(text = "List All Breeds")
+            }
+        }
+        item {
+            Button(onClick = { onNewScreenSelected(RandomImageScreen()) }) {
+                Text(text = "Random Image")
+            }
+        }
+        item {
+            Button(onClick = { onNewScreenSelected(BreedImagesScreen()) }) {
+                Text(text = "Breed Images")
+            }
+        }
+        item {
+            Button(onClick = { onNewScreenSelected(ListSubBreedsScreen()) }) {
+                Text(text = "List Sub Breeds")
+            }
+        }
+    }
+}

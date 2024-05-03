@@ -1,5 +1,6 @@
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Icon
@@ -8,6 +9,7 @@ import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,21 +53,31 @@ class RandomImageScreen(val modifier: Modifier = Modifier) : Screen {
                     title = { Text("Random Image") },
                     navigationIcon = {
                         IconButton(onClick = { navigator?.pop() }) {
-                            Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     }
                 )
-            }
+            },
+            modifier = modifier
         ) { padding ->
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = modifier.fillMaxSize().padding(padding).padding(16.dp),
-            ) {
-                BreedInput(breed, onValueChange = { breed = it })
-                PrintStringInfo(text)
-            }
+            RandomImageScreenContent(padding, breed, text, onBreedChange = { breed = it })
         }
     }
 }
 
+@Composable
+internal fun RandomImageScreenContent(
+    padding: PaddingValues,
+    breed: String,
+    text: String,
+    onBreedChange: (String) -> Unit = {},
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
+    ) {
+        BreedInput(breed, onValueChange = onBreedChange)
+        PrintStringInfo(text)
+    }
+}

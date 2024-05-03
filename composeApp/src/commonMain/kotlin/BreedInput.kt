@@ -9,7 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.TextFieldValue
 import kotlinx.coroutines.delay
 
-const val DEBOUNCE_TIME = 1_000L
+internal const val DEBOUNCE_TIME = 1_000L
 
 @Composable
 fun BreedInput(text: String, onValueChange: (String) -> Unit) {
