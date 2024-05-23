@@ -12,7 +12,7 @@ compose = "1.6.7"
 compose-compiler = "1.5.14"
 compose-plugin = "1.6.10"
 junit = "4.13.2"
-kotlin = "1.9.24"
+kotlin = "2.0.0"
 kotestAssertionsCore = "5.9.0"
 kotlinxCoroutinesCore = "1.8.1"
 ktorVersion = "2.3.11"
@@ -54,6 +54,7 @@ voyager-transitions = { module = "cafe.adriel.voyager:voyager-transitions", vers
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
 jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose-plugin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kmmBridge = { id = "co.touchlab.kmmbridge", version.ref = "kmmbridge" }
