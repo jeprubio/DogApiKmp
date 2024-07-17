@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.serialization)
     id("maven-publish")
     alias(libs.plugins.kmmBridge)
+    id("co.touchlab.skie") version "0.6.4"
 }
 
 group = "com.rumosoft.dogapi"
