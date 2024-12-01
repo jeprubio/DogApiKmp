@@ -19,6 +19,7 @@ uiTestJunit4Android = "1.7.5"
 voyager = "1.0.0"
 kmmbridge = "1.0.1"
 skie = "0.9.5"
+material3="1.7.0"
 
 [libraries]
 androidx-ui-test-junit4-android = { module = "androidx.compose.ui:ui-test-junit4-android", version.ref = "uiTestJunit4Android" }
@@ -29,7 +30,7 @@ compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "compose" }
 compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "compose" }
-compose-material = { module = "androidx.compose.material:material", version.ref = "compose" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
 kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotestAssertionsCore" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktorVersion" }

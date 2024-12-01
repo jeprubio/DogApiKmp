@@ -12,7 +12,8 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,7 +37,9 @@ fun FilterWithResult(
     val bottomSpace = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom).asPaddingValues()
     Box(modifier = modifier.fillMaxWidth()) {
         var columnHeightPx by remember { mutableStateOf(0) }
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+        LazyColumn(modifier = Modifier.fillMaxSize()
+            .padding(horizontal = 16.dp)
+        ) {
             item {
                 val columnHeightDp = with(LocalDensity.current) { columnHeightPx.toDp() }
                 Spacer(modifier = Modifier.height(columnHeightDp + 16.dp))
@@ -50,11 +53,11 @@ fun FilterWithResult(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color.White,
-                        Color.White,
-                        Color.White.copy(alpha = 0.98f),
-                        Color.White.copy(alpha = 0.95f),
-                        Color.White.copy(alpha = 0.90f),
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.background.copy(alpha = 0.98f),
+                        MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
+                        MaterialTheme.colorScheme.background.copy(alpha = 0.90f),
                         Color.Transparent,
                     ),
                     startY = 0f,

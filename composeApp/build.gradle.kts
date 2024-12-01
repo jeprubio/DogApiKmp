@@ -48,12 +48,12 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material)
             implementation(compose.ui)
-            @OptIn(ExperimentalComposeLibrary::class)
             implementation(compose.components.resources)
             implementation(libs.napier)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.voyager.navigator)
             implementation(libs.voyager.transitions)
+            implementation(libs.compose.material3)
         }
 
         // Adds common test dependencies
