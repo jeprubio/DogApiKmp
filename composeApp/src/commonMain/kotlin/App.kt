@@ -10,7 +10,7 @@ import cafe.adriel.voyager.navigator.Navigator
 fun App() {
     MaterialTheme {
         Surface(
-            modifier = Modifier.fillMaxSize().safeDrawingPadding(),
+            modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colors.background
         ) {
             Navigator(screen = MainScreen())

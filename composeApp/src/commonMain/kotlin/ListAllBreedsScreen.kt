@@ -1,4 +1,8 @@
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Scaffold
@@ -47,11 +51,23 @@ class ListAllBreedsScreen(val modifier: Modifier = Modifier) : Screen {
                         IconButton(onClick = { navigator?.pop() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
-                    }
+                    },
+                    modifier = Modifier.statusBarsPadding(),
                 )
-            }
+            },
+            modifier = modifier,
         ) { padding ->
-            PrintStringInfo(text, modifier = modifier.padding(padding).padding(16.dp))
+            LazyColumn(modifier = Modifier.padding(horizontal = 16.dp)) {
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                item {
+                    Text(text = text)
+                }
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
         }
     }
 }

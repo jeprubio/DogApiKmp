@@ -2,6 +2,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Scaffold
@@ -56,18 +57,12 @@ class ListSubBreedsScreen(val modifier: Modifier = Modifier) : Screen {
                         IconButton(onClick = { navigator?.pop() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
-                    }
+                    },
+                    modifier = Modifier.statusBarsPadding(),
                 )
             }
         ) { padding ->
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = modifier.fillMaxSize().padding(padding).padding(16.dp),
-            ) {
-                BreedInput(breed, onValueChange = { breed = it })
-                PrintStringInfo(text)
-            }
+            FilterWithResult(breed, text, Modifier.padding(padding), onBreedChange = { breed = it })
         }
     }
 }

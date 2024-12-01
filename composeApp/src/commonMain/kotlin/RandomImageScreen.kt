@@ -3,6 +3,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Scaffold
@@ -55,29 +56,13 @@ class RandomImageScreen(val modifier: Modifier = Modifier) : Screen {
                         IconButton(onClick = { navigator?.pop() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
-                    }
+                    },
+                    modifier = Modifier.statusBarsPadding(),
                 )
             },
             modifier = modifier
         ) { padding ->
-            RandomImageScreenContent(padding, breed, text, onBreedChange = { breed = it })
+            FilterWithResult(breed, text, Modifier.padding(padding), onBreedChange = { breed = it })
         }
-    }
-}
-
-@Composable
-internal fun RandomImageScreenContent(
-    padding: PaddingValues,
-    breed: String,
-    text: String,
-    onBreedChange: (String) -> Unit = {},
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
-    ) {
-        BreedInput(breed, onValueChange = onBreedChange)
-        PrintStringInfo(text)
     }
 }
