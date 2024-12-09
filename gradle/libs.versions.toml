@@ -3,12 +3,12 @@ agp = "8.5.2"
 #Keep
 android-compileSdk = "35"
 #Keep
-android-minSdk = "25"
+android-minSdk = "26"
 #Keep
 android-targetSdk = "35"
 androidx-activityCompose = "1.9.3"
 compose = "1.7.5"
-compose-plugin = "1.7.0"
+compose-plugin = "1.7.1"
 junit = "4.13.2"
 kotlin = "2.1.0"
 kotestAssertionsCore = "5.9.1"
@@ -17,9 +17,10 @@ ktorVersion = "3.0.1"
 napier = "2.7.1"
 uiTestJunit4Android = "1.7.5"
 voyager = "1.0.0"
-kmmbridge = "1.0.1"
+kmmbridge = "1.1.0"
 skie = "0.9.5"
-material3="1.7.0"
+material3="1.7.1"
+dependencies = "0.51.0"
 
 [libraries]
 androidx-ui-test-junit4-android = { module = "androidx.compose.ui:ui-test-junit4-android", version.ref = "uiTestJunit4Android" }
@@ -52,3 +53,4 @@ kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref =
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kmmBridge = { id = "co.touchlab.kmmbridge", version.ref = "kmmbridge" }
 skie = { id = "co.touchlab.skie", version.ref = "skie" }
+dependencies = { id = "com.github.ben-manes.versions", version.ref = "dependencies" }
