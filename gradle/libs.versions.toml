@@ -7,30 +7,26 @@ android-minSdk = "26"
 #Keep
 android-targetSdk = "35"
 androidx-activityCompose = "1.9.3"
-compose = "1.7.5"
+compose = "1.7.6"
 compose-plugin = "1.7.1"
-junit = "4.13.2"
 kotlin = "2.1.0"
 kotestAssertionsCore = "5.9.1"
 kotlinxCoroutinesCore = "1.9.0"
 ktorVersion = "3.0.1"
 napier = "2.7.1"
-uiTestJunit4Android = "1.7.5"
+uiTestJunit4Android = "1.7.6"
 voyager = "1.0.0"
-kmmbridge = "1.1.0"
-skie = "0.9.5"
+kmmbridge = "1.2.0"
+skie = "0.10.0"
 material3="1.7.1"
 dependencies = "0.51.0"
 
 [libraries]
 androidx-ui-test-junit4-android = { module = "androidx.compose.ui:ui-test-junit4-android", version.ref = "uiTestJunit4Android" }
 androidx-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "uiTestJunit4Android" }
-junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
-compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "compose" }
-compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "compose" }
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
 kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotestAssertionsCore" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
