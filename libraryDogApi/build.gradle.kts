@@ -93,3 +93,9 @@ kmmbridge {
     spm()
     //cocoapods("git@github.com:touchlab/PublicPodSpecs.git")
 }
+
+skie {
+    build {
+        produceDistributableFramework()
+    }
+}
