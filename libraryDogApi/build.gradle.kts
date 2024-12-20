@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
@@ -87,11 +89,11 @@ android {
 }
 
 kmmbridge {
+    buildType.set(NativeBuildType.DEBUG)
     frameworkName.set("LibraryDogApi")
 
     mavenPublishArtifacts()
     spm()
-    //cocoapods("git@github.com:touchlab/PublicPodSpecs.git")
 }
 
 skie {
