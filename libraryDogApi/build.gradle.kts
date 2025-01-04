@@ -49,7 +49,7 @@ kotlin {
             implementation(kotlin("test"))
             implementation(libs.kotest.assertions.core)
             implementation(libs.ktor.client.mock)
-            implementation(libs.ktor.serialization)
+            implementation(libs.kotlinx.coroutines.test)
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)

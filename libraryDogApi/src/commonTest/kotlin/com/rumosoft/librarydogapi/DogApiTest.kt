@@ -3,7 +3,7 @@ package com.rumosoft.librarydogapi
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -13,7 +13,7 @@ class DogApiTest {
 
     @Test
     fun `breeds api call test`() = test {
-        runBlocking {
+        runTest {
             dogApiMock.givenSuccess()
             val results = sut.breeds()
             println(results)
@@ -26,7 +26,7 @@ class DogApiTest {
 
     @Test
     fun `breeds api call failure test`() = test {
-        runBlocking {
+        runTest {
             dogApiMock.givenFailure()
             val results = sut.breeds()
             println(results)
@@ -37,7 +37,7 @@ class DogApiTest {
 
     @Test
     fun `breed images test`() = test {
-        runBlocking {
+        runTest {
             dogApiMock.givenSuccess()
             val results = sut.breedImages("pug")
             println(results)
@@ -49,7 +49,7 @@ class DogApiTest {
 
     @Test
     fun `breed images failure test`() = test {
-        runBlocking {
+        runTest {
             dogApiMock.givenFailure()
             val results = sut.breedImages("pug")
             println(results)

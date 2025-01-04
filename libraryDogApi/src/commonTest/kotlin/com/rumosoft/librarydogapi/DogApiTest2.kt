@@ -11,7 +11,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -21,7 +21,7 @@ class DogApiTest2 {
 
     @Test
     fun `breeds api call test`() {
-        runBlocking {
+        runTest {
             val sut = givenSut(
                 MockEngine { _ ->
                     respond(
@@ -48,7 +48,7 @@ class DogApiTest2 {
 
     @Test
     fun `breeds api call failure test`() {
-        runBlocking {
+        runTest {
             val sut = givenSut(
                 MockEngine { _ ->
                     respond(
@@ -68,7 +68,7 @@ class DogApiTest2 {
 
     @Test
     fun `breed images test`() {
-        runBlocking {
+        runTest {
             val sut = givenSut(
                 MockEngine { _ ->
                     respond(
@@ -96,7 +96,7 @@ class DogApiTest2 {
 
     @Test
     fun `breed images failure test`() {
-        runBlocking {
+        runTest {
             val sut = givenSut(
                 MockEngine { _ ->
                     respond(
