@@ -1,16 +1,10 @@
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performKeyPress
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.runComposeUiTest
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -21,7 +15,7 @@ class BreedInputTest {
     @Test
     fun checkInputVisible() = runComposeUiTest {
         setContent {
-            RandomImageScreenContent(PaddingValues(8.dp), "breed", "subBreed", onBreedChange = { })
+            BreedInput("Breed", onValueChange = {})
         }
 
         onNodeWithText("Enter a breed").assertIsDisplayed()
