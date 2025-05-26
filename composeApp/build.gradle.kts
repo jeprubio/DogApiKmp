@@ -46,14 +46,14 @@ kotlin {
             implementation(project(":libraryDogApi"))
             implementation(compose.runtime)
             implementation(compose.foundation)
-            implementation(compose.material)
+            implementation(compose.material3)
+            implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(libs.napier)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.voyager.navigator)
             implementation(libs.voyager.transitions)
-            implementation(libs.compose.material3)
         }
 
         // Adds common test dependencies
