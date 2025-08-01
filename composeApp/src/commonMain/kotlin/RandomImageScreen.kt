@@ -57,7 +57,11 @@ class RandomImageScreen(val modifier: Modifier = Modifier) : Screen {
             },
             modifier = modifier,
         ) { padding ->
-            FilterWithResult(breed, text, Modifier.padding(padding), onBreedChange = { breed = it })
+            FilterWithResult(
+                breed = breed,
+                text = text,
+                modifier = Modifier.padding(top = padding.calculateTopPadding()),
+                onBreedChange = { breed = it })
         }
     }
 }
