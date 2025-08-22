@@ -21,6 +21,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import com.rumosoft.librarydogapi.DogApi
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 
 class RandomImageScreen(val modifier: Modifier = Modifier) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -38,6 +39,8 @@ class RandomImageScreen(val modifier: Modifier = Modifier) : Screen {
                         if (breed.isEmpty()) dogApi.randomImage() else dogApi.randomImage(breed)
                     Napier.d("JEP - result: $result")
                     result.toString()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     e.message ?: "error"
                 }

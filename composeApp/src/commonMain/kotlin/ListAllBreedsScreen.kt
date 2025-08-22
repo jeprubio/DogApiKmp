@@ -27,6 +27,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import com.rumosoft.librarydogapi.DogApi
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 
 class ListAllBreedsScreen(val modifier: Modifier = Modifier) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -41,6 +42,8 @@ class ListAllBreedsScreen(val modifier: Modifier = Modifier) : Screen {
                     val result = DogApi.createDefault().breeds()
                     Napier.d("JEP - result: $result")
                     result.toString()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     e.message ?: "error"
                 }

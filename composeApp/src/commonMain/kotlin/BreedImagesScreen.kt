@@ -21,6 +21,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import com.rumosoft.librarydogapi.DogApi
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 
 class BreedImagesScreen(val modifier: Modifier = Modifier) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -40,6 +41,8 @@ class BreedImagesScreen(val modifier: Modifier = Modifier) : Screen {
                     } else {
                         "Please enter a breed"
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     e.message ?: "error"
                 }
