@@ -19,6 +19,8 @@ publishing {
 }
 
 kotlin {
+    explicitApi()
+
     jvmToolchain(17)
     // withSourcesJar(publish = false)
 
@@ -97,6 +99,7 @@ kmmbridge {
 }
 
 skie {
+    isEnabled = false
     build {
         produceDistributableFramework()
     }
