@@ -11,10 +11,15 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.utils.io.core.Closeable
 
 public class DogApi(
-    private val client: HttpClient
-) {
+    private val client: HttpClient,
+    private val baseUrl: String = "https://dog.ceo/api"
+) : Closeable {
+
+    override fun close(): Unit = client.close()
+
     public companion object {
         public fun createDefault(): DogApi {
             val defaultClient = HttpClient {
@@ -27,7 +32,7 @@ public class DogApi(
     }
 
     public suspend fun breeds(): Result<List<Breed>> {
-        val response: HttpResponse = client.get("https://dog.ceo/api/breeds/list/all")
+        val response: HttpResponse = client.get("$baseUrl/breeds/list/all")
         return response.asKotlinResult<BreedsResult>().map { result ->
             result.message.map { (breed, subBreeds) ->
                 Breed(
@@ -39,32 +44,33 @@ public class DogApi(
     }
 
     public suspend fun randomImage(): Result<String> {
-        val response = client.get("https://dog.ceo/api/breeds/image/random")
+        val response = client.get("$baseUrl/breeds/image/random")
         return response.asKotlinResult()
     }
 
     public suspend fun randomImage(breed: String): Result<String> {
-        val response = client.get("https://dog.ceo/api/breed/${breed.lowercase()}/images/random")
+        val response = client.get("$baseUrl/breed/${breed.lowercase()}/images/random")
         return response.asKotlinResult()
     }
 
     public suspend fun breedImages(breed: String): Result<List<String>> {
-        val response: HttpResponse = client.get("https://dog.ceo/api/breed/${breed.lowercase()}/images")
+        val response: HttpResponse = client.get("$baseUrl/breed/${breed.lowercase()}/images")
         return response.asKotlinResult<BreedImagesResult>().map { result ->
             result.message
         }
     }
 
-    public suspend fun subBreedImages(breed: String, subBreed: String): String {
+    public suspend fun subBreedImages(breed: String, subBreed: String): Result<String> {
         val response =
-            client.get("https://dog.ceo/api/breed/${breed.lowercase()}/${subBreed.lowercase()}/images")
-        return response.body()
+            client.get("$baseUrl/breed/${breed.lowercase()}/${subBreed.lowercase()}/images")
+        return response.asKotlinResult<String>()
     }
 
-    public suspend fun listSubBreeds(breed: String): List<String> {
-        val result: SubBreedsResult =
-            client.get("https://dog.ceo/api/breed/${breed.lowercase()}/list").body()
-        return result.message
+    public suspend fun listSubBreeds(breed: String): Result<List<String>> {
+        val response: HttpResponse = client.get("$baseUrl/breed/${breed.lowercase()}/list")
+        return response.asKotlinResult<SubBreedsResult>().map { result ->
+            result.message
+        }
     }
 }
 
