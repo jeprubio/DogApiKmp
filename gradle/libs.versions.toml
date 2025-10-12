@@ -1,5 +1,5 @@
 [versions]
-agp = "8.10.0"
+agp = "8.11.1"
 #Keep
 android-compileSdk = "36"
 #Keep
@@ -7,19 +7,19 @@ android-minSdk = "26"
 #Keep
 android-targetSdk = "36"
 androidx-activityCompose = "1.11.0"
-compose = "1.9.1"
-compose-plugin = "1.8.2"
+compose = "1.9.3"
+compose-plugin = "1.9.0"
 kotlin = "2.2.20"
 kotestAssertionsCore = "6.0.3"
 kotlinxCoroutines = "1.10.2"
-ktorVersion = "3.3.0"
+ktorVersion = "3.3.1"
 napier = "2.7.1"
-uiTestJunit4Android = "1.9.1"
+uiTestJunit4Android = "1.9.3"
 voyager = "1.0.1"
 kmmbridge = "1.2.1"
 skie = "0.10.6"
 material3="1.8.2"
-dependencies = "0.52.0"
+dependencies = "0.53.0"
 
 [libraries]
 androidx-ui-test-junit4-android = { module = "androidx.compose.ui:ui-test-junit4-android", version.ref = "uiTestJunit4Android" }
