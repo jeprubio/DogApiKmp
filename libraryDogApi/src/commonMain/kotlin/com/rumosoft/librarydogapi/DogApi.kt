@@ -60,10 +60,10 @@ public class DogApi(
         }
     }
 
-    public suspend fun subBreedImages(breed: String, subBreed: String): Result<String> {
+    public suspend fun subBreedImages(breed: String, subBreed: String): Result<List<String>> {
         val response =
             client.get("$baseUrl/breed/${breed.lowercase()}/${subBreed.lowercase()}/images")
-        return response.asKotlinResult<String>()
+        return response.asKotlinResult<BreedImagesResult>().map { it.message }
     }
 
     public suspend fun listSubBreeds(breed: String): Result<List<String>> {
