@@ -99,7 +99,7 @@ kmmbridge {
 }
 
 skie {
-    isEnabled = false
+    isEnabled = true
     build {
         produceDistributableFramework()
     }
