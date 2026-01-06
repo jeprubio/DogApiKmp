@@ -19,11 +19,14 @@ import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import com.rumosoft.librarydogapi.DogApi
+import com.rumosoft.librarydogapi.DogApiClient
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.launch
-import kotlin.coroutines.cancellation.CancellationException
 
-class RandomImageScreen(val modifier: Modifier = Modifier) : Screen {
+class RandomImageScreen(
+    private val dogApi: DogApiClient = DogApi.createDefault(),
+    val modifier: Modifier = Modifier
+) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
@@ -33,16 +36,24 @@ class RandomImageScreen(val modifier: Modifier = Modifier) : Screen {
         var text by remember { mutableStateOf("Loading") }
         LaunchedEffect(breed) {
             scope.launch {
-                text = try {
-                    val dogApi = DogApi.createDefault()
-                    val result =
-                        if (breed.isEmpty()) dogApi.randomImage() else dogApi.randomImage(breed)
-                    Napier.d("JEP - result: $result")
-                    result.toString()
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    e.message ?: "error"
+                if (breed.isEmpty()) {
+                    dogApi.randomImage()
+                        .onSuccess { imageUrl ->
+                            Napier.d("JEP - result: $imageUrl")
+                            text = imageUrl
+                        }
+                        .onFailure { error ->
+                            text = error.message ?: "error"
+                        }
+                } else {
+                    dogApi.randomImage(breed)
+                        .onSuccess { imageUrl ->
+                            Napier.d("JEP - result: $imageUrl")
+                            text = imageUrl
+                        }
+                        .onFailure { error ->
+                            text = error.message ?: "error"
+                        }
                 }
             }
         }

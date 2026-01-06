@@ -25,11 +25,14 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import com.rumosoft.librarydogapi.DogApi
+import com.rumosoft.librarydogapi.DogApiClient
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.launch
-import kotlin.coroutines.cancellation.CancellationException
 
-class ListAllBreedsScreen(val modifier: Modifier = Modifier) : Screen {
+class ListAllBreedsScreen(
+    private val dogApi: DogApiClient = DogApi.createDefault(),
+    val modifier: Modifier = Modifier
+) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
@@ -38,15 +41,14 @@ class ListAllBreedsScreen(val modifier: Modifier = Modifier) : Screen {
         var text by remember { mutableStateOf("Loading") }
         LaunchedEffect(true) {
             scope.launch {
-                text = try {
-                    val result = DogApi.createDefault().breeds()
-                    Napier.d("JEP - result: $result")
-                    result.toString()
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    e.message ?: "error"
-                }
+                dogApi.breeds()
+                    .onSuccess { breeds ->
+                        Napier.d("JEP - result: $breeds")
+                        text = breeds.joinToString("\n") { "${it.name}: ${it.subBreeds}" }
+                    }
+                    .onFailure { error ->
+                        text = error.message ?: "error"
+                    }
             }
         }
         Scaffold(

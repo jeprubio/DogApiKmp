@@ -19,11 +19,14 @@ import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import com.rumosoft.librarydogapi.DogApi
+import com.rumosoft.librarydogapi.DogApiClient
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.launch
-import kotlin.coroutines.cancellation.CancellationException
 
-class BreedImagesScreen(val modifier: Modifier = Modifier) : Screen {
+class BreedImagesScreen(
+    private val dogApi: DogApiClient = DogApi.createDefault(),
+    val modifier: Modifier = Modifier
+) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
@@ -33,18 +36,17 @@ class BreedImagesScreen(val modifier: Modifier = Modifier) : Screen {
         var text by remember { mutableStateOf("Loading") }
         LaunchedEffect(breed) {
             scope.launch {
-                text = try {
-                    if (breed.isNotEmpty()) {
-                        val result = DogApi.createDefault().breedImages(breed)
-                        Napier.d("JEP - result: $result")
-                        result.toString()
-                    } else {
-                        "Please enter a breed"
-                    }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    e.message ?: "error"
+                if (breed.isNotEmpty()) {
+                    dogApi.breedImages(breed)
+                        .onSuccess { images ->
+                            Napier.d("JEP - result: $images")
+                            text = images.joinToString(", ")
+                        }
+                        .onFailure { error ->
+                            text = error.message ?: "error"
+                        }
+                } else {
+                    text = "Please enter a breed"
                 }
             }
         }
