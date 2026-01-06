@@ -11,7 +11,6 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
-import io.ktor.utils.io.core.Closeable
 
 /**
  * Default implementation of the Dog API client.
@@ -19,11 +18,19 @@ import io.ktor.utils.io.core.Closeable
  * This class provides access to the Dog CEO API (https://dog.ceo/dog-api/).
  * It implements DogApiClient for better testability and dependency injection.
  *
+ * The default implementation uses a shared HttpClient for efficiency.
+ * You can also provide your own HttpClient instance for custom configuration.
+ *
  * Example usage:
  * ```
  * val api = DogApi.createDefault()
  * val breeds = api.breeds().getOrNull()
- * api.close() // Don't forget to close when done
+ * ```
+ *
+ * For custom HttpClient configuration:
+ * ```
+ * val customClient = HttpClient { /* your config */ }
+ * val api = DogApi(customClient)
  * ```
  *
  * For iOS developers: Use the protocol DogApiClient for dependency injection
@@ -32,24 +39,29 @@ import io.ktor.utils.io.core.Closeable
 public class DogApi(
     private val client: HttpClient,
     private val baseUrl: String = DEFAULT_BASE_URL
-) : DogApiClient, Closeable {
-
-    override fun close(): Unit = client.close()
+) : DogApiClient {
 
     public companion object {
         public const val DEFAULT_BASE_URL: String = "https://dog.ceo/api"
 
         /**
-         * Creates a DogApi instance with default configuration.
-         * This is the simplest way to get started.
+         * Shared HttpClient instance used by createDefault().
+         * This client is reused across all default DogApi instances for efficiency.
          */
-        public fun createDefault(baseUrl: String = DEFAULT_BASE_URL): DogApi {
-            val defaultClient = HttpClient {
+        private val sharedClient: HttpClient by lazy {
+            HttpClient {
                 install(ContentNegotiation) {
                     json()
                 }
             }
-            return DogApi(defaultClient, baseUrl)
+        }
+
+        /**
+         * Creates a DogApi instance with default configuration using a shared HttpClient.
+         * This is the simplest way to get started.
+         */
+        public fun createDefault(baseUrl: String = DEFAULT_BASE_URL): DogApi {
+            return DogApi(sharedClient, baseUrl)
         }
     }
 

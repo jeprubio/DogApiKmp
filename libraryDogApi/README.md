@@ -16,7 +16,7 @@ A Kotlin Multiplatform library providing easy access to the [Dog CEO API](https:
 
 ```kotlin
 dependencies {
-    implementation("com.rumosoft.dogapi:libraryDogApi:0.8")
+    implementation("com.rumosoft.dogapi:libraryDogApi:0.9")
 }
 ```
 
@@ -58,9 +58,6 @@ val allHuskyImages = api.breedImages("husky")
 
 // List sub-breeds
 val subBreeds = api.listSubBreeds("hound")
-
-// Don't forget to close when done
-api.close()
 ```
 
 #### Dependency Injection
@@ -261,12 +258,11 @@ val api = DogApi(httpClient)
 ```
 
 ## Architecture
-
 - **Interface-first design**: `DogApiClient` interface makes testing easy
 - **Result-based error handling**: All methods return `Result<T>`
 - **Dependency injection friendly**: Constructor injection supported
 - **Platform-specific extensions**: iOS callbacks in addition to suspend functions
-- **Proper resource management**: Implements `Closeable` for cleanup
+- **Efficient resource management**: Uses a shared HttpClient for optimal performance
 
 ## Best Practices
 
@@ -294,19 +290,7 @@ result.onSuccess { breeds ->
     }
 }
 ```
-
-### 3. Close Resources
-
-```kotlin
-val api = DogApi.createDefault()
-try {
-    api.breeds()
-} finally {
-    api.close()
-}
-```
-
-### 4. Use Mocks in Tests
+### 3. Use Mocks in Tests
 
 ```kotlin
 val mockApi = MockDogApiClient(
