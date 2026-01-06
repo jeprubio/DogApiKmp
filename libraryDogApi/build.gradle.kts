@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.androidKmpLibrary)
     alias(libs.plugins.serialization)
     id("maven-publish")
     alias(libs.plugins.kmmBridge)
@@ -24,8 +24,10 @@ kotlin {
     jvmToolchain(17)
     // withSourcesJar(publish = false)
 
-    androidTarget {
-        publishLibraryVariants("release")
+    androidLibrary {
+        namespace = "com.rumosoft.dogapikmp"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
     }
 
     listOf(
@@ -60,34 +62,6 @@ kotlin {
             implementation(libs.ktor.client.darwin)
         }
     }
-}
-
-android {
-    namespace = "com.rumosoft.dogapikmp"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-
-    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
-    sourceSets["main"].res.srcDirs("src/androidMain/res")
-    sourceSets["main"].resources.srcDirs("src/commonMain/resources")
-
-    defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
-    }
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
-    buildTypes {
-        getByName("release") {
-            isMinifyEnabled = false
-        }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    testOptions.targetSdk = libs.versions.android.targetSdk.get().toInt()
 }
 
 kmmbridge {
