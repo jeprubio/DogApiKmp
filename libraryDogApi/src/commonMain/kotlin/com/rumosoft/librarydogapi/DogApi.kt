@@ -13,25 +13,47 @@ import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.core.Closeable
 
+/**
+ * Default implementation of the Dog API client.
+ *
+ * This class provides access to the Dog CEO API (https://dog.ceo/dog-api/).
+ * It implements DogApiClient for better testability and dependency injection.
+ *
+ * Example usage:
+ * ```
+ * val api = DogApi.createDefault()
+ * val breeds = api.breeds().getOrNull()
+ * api.close() // Don't forget to close when done
+ * ```
+ *
+ * For iOS developers: Use the protocol DogApiClient for dependency injection
+ * to make your code more testable.
+ */
 public class DogApi(
     private val client: HttpClient,
-    private val baseUrl: String = "https://dog.ceo/api"
-) : Closeable {
+    private val baseUrl: String = DEFAULT_BASE_URL
+) : DogApiClient, Closeable {
 
     override fun close(): Unit = client.close()
 
     public companion object {
-        public fun createDefault(): DogApi {
+        public const val DEFAULT_BASE_URL: String = "https://dog.ceo/api"
+
+        /**
+         * Creates a DogApi instance with default configuration.
+         * This is the simplest way to get started.
+         */
+        public fun createDefault(baseUrl: String = DEFAULT_BASE_URL): DogApi {
             val defaultClient = HttpClient {
                 install(ContentNegotiation) {
                     json()
                 }
             }
-            return DogApi(defaultClient)
+            return DogApi(defaultClient, baseUrl)
         }
     }
 
-    public suspend fun breeds(): Result<List<Breed>> {
+    override suspend fun breeds(): Result<List<Breed>> {
         val response: HttpResponse = client.get("$baseUrl/breeds/list/all")
         return response.asKotlinResult<BreedsResult>().map { result ->
             result.message.map { (breed, subBreeds) ->
@@ -43,30 +65,30 @@ public class DogApi(
         }
     }
 
-    public suspend fun randomImage(): Result<String> {
+    override suspend fun randomImage(): Result<String> {
         val response = client.get("$baseUrl/breeds/image/random")
         return response.asKotlinResult()
     }
 
-    public suspend fun randomImage(breed: String): Result<String> {
+    override suspend fun randomImage(breed: String): Result<String> {
         val response = client.get("$baseUrl/breed/${breed.lowercase()}/images/random")
         return response.asKotlinResult()
     }
 
-    public suspend fun breedImages(breed: String): Result<List<String>> {
+    override suspend fun breedImages(breed: String): Result<List<String>> {
         val response: HttpResponse = client.get("$baseUrl/breed/${breed.lowercase()}/images")
         return response.asKotlinResult<BreedImagesResult>().map { result ->
             result.message
         }
     }
 
-    public suspend fun subBreedImages(breed: String, subBreed: String): Result<List<String>> {
+    override suspend fun subBreedImages(breed: String, subBreed: String): Result<List<String>> {
         val response =
             client.get("$baseUrl/breed/${breed.lowercase()}/${subBreed.lowercase()}/images")
         return response.asKotlinResult<BreedImagesResult>().map { it.message }
     }
 
-    public suspend fun listSubBreeds(breed: String): Result<List<String>> {
+    override suspend fun listSubBreeds(breed: String): Result<List<String>> {
         val response: HttpResponse = client.get("$baseUrl/breed/${breed.lowercase()}/list")
         return response.asKotlinResult<SubBreedsResult>().map { result ->
             result.message

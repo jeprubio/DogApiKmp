@@ -75,6 +75,6 @@ class DogApiTest {
                 })
             }
         }
-        val sut: DogApi = DogApi(httpClient)
+        val sut: DogApiClient = DogApi(httpClient)
     }
 }
