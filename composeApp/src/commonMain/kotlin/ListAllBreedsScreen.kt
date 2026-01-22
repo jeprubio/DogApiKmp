@@ -44,7 +44,13 @@ class ListAllBreedsScreen(
                 dogApi.breeds()
                     .onSuccess { breeds ->
                         Napier.d("JEP - result: $breeds")
-                        text = breeds.joinToString("\n") { "${it.name}: ${it.subBreeds}" }
+                        text = breeds.joinToString("\n") { breed ->
+                            if (breed.subBreeds.isEmpty()) {
+                                breed.name
+                            } else {
+                                "${breed.name}: ${breed.subBreeds}"
+                            }
+                        }
                     }
                     .onFailure { error ->
                         text = error.message ?: "error"
