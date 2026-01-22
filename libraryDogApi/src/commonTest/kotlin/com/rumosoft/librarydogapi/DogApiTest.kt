@@ -18,6 +18,7 @@ class DogApiTest {
 
     companion object {
         private const val INVALID_BREED = "invalidbreed"
+        private const val HTTP_INTERNAL_SERVER_ERROR = 500
     }
 
     @Test
@@ -72,7 +73,7 @@ class DogApiTest {
             assertTrue { results.isFailure }
             val error = results.exceptionOrNull()
             assertTrue { error is DogApiError.HttpError }
-            assertEquals(500, (error as DogApiError.HttpError).statusCode)
+            assertEquals(HTTP_INTERNAL_SERVER_ERROR, (error as DogApiError.HttpError).statusCode)
         }
     }
 
