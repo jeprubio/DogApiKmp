@@ -6,6 +6,7 @@ A Kotlin Multiplatform library providing easy access to the [Dog CEO API](https:
 
 ✅ **Multiplatform** - Works on Android, iOS, and other Kotlin platforms  
 ✅ **Type-safe** - Strongly typed APIs with proper Result types  
+✅ **Typed Error Handling** - Specific error types (NetworkError, HttpError, etc.) for better error handling  
 ✅ **Testable** - Protocol-based design for easy mocking  
 ✅ **iOS-friendly** - Both async/await and callback patterns supported  
 ✅ **Well-documented** - Comprehensive documentation for all public APIs  
@@ -260,6 +261,7 @@ val api = DogApi(httpClient)
 ## Architecture
 - **Interface-first design**: `DogApiClient` interface makes testing easy
 - **Result-based error handling**: All methods return `Result<T>`
+- **Typed errors**: Uses `DogApiError` sealed class for specific, type-safe error handling
 - **Dependency injection friendly**: Constructor injection supported
 - **Platform-specific extensions**: iOS callbacks in addition to suspend functions
 - **Efficient resource management**: Uses a shared HttpClient for optimal performance
@@ -278,6 +280,8 @@ class BreedViewModel(private val api: DogApi)
 
 ### 2. Handle Errors Properly
 
+#### Kotlin/Android
+
 ```kotlin
 val result = api.breeds()
 result.onSuccess { breeds ->
@@ -285,11 +289,33 @@ result.onSuccess { breeds ->
 }.onFailure { error ->
     when (error) {
         is DogApiError.NetworkError -> // Handle network issues
-        is DogApiError.HttpError -> // Handle HTTP errors
+        is DogApiError.HttpError -> // Handle HTTP errors (status code available)
+        is DogApiError.SerializationError -> // Handle parsing errors
         else -> // Handle other errors
     }
 }
 ```
+
+#### iOS/Swift
+
+```swift
+do {
+    let result = try await api.breeds()
+    // Handle success
+} catch let error as DogApiError {
+    switch error {
+    case .networkError(let message, _):
+        // Show retry or offline mode
+    case .httpError(let statusCode, let message):
+        // Handle HTTP errors
+    case .serializationError(let message, _):
+        // Handle parsing errors
+    default:
+        // Handle other errors
+    }
+}
+```
+
 ### 3. Use Mocks in Tests
 
 ```kotlin

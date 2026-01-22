@@ -58,6 +58,20 @@ class DogApiTest {
         }
     }
 
+    @Test
+    fun `failure returns typed DogApiError`() = test {
+        runTest {
+            dogApiMock.givenFailure()
+
+            val results = sut.breeds()
+
+            assertTrue { results.isFailure }
+            val error = results.exceptionOrNull()
+            assertTrue { error is DogApiError.HttpError }
+            assertEquals(500, (error as DogApiError.HttpError).statusCode)
+        }
+    }
+
     private fun test(block: TestScope.() -> Unit) {
         TestScope().block()
     }
@@ -67,6 +81,7 @@ class DogApiTest {
         val httpClient = HttpClient(
             engine = dogApiMock.engine
         ) {
+            expectSuccess = true  // Make Ktor throw exceptions for non-2xx responses
             install(ContentNegotiation) {
                 json(Json {
                     prettyPrint = true

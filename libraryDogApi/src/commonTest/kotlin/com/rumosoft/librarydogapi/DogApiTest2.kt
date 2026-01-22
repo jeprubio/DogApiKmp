@@ -116,6 +116,7 @@ class DogApiTest2 {
 
     private fun givenHttpClient(engine: HttpClientEngine): HttpClient {
         return HttpClient(engine = engine) {
+            expectSuccess = true  // Make Ktor throw exceptions for non-2xx responses
             install(ContentNegotiation) {
                 json(Json {
                     prettyPrint = true

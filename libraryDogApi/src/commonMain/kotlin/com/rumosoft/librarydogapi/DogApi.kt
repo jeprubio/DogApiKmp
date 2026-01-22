@@ -6,11 +6,15 @@ import com.rumosoft.librarydogapi.models.BreedsResult
 import com.rumosoft.librarydogapi.models.SubBreedsResult
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.network.sockets.SocketTimeoutException
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.statement.HttpResponse
-import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.SerializationException
 
 /**
  * Default implementation of the Dog API client.
@@ -50,6 +54,7 @@ public class DogApi(
          */
         private val sharedClient: HttpClient by lazy {
             HttpClient {
+                expectSuccess = true  // Throw exceptions for non-2xx responses
                 install(ContentNegotiation) {
                     json()
                 }
@@ -65,53 +70,57 @@ public class DogApi(
         }
     }
 
-    override suspend fun breeds(): Result<List<Breed>> {
+    override suspend fun breeds(): Result<List<Breed>> = safeApiCall {
         val response: HttpResponse = client.get("$baseUrl/breeds/list/all")
-        return response.asKotlinResult<BreedsResult>().map { result ->
-            result.message.map { (breed, subBreeds) ->
-                Breed(
-                    name = breed,
-                    subBreeds = subBreeds
-                )
-            }
+        response.body<BreedsResult>().message.map { (breed, subBreeds) ->
+            Breed(name = breed, subBreeds = subBreeds)
         }
     }
 
-    override suspend fun randomImage(): Result<String> {
-        val response = client.get("$baseUrl/breeds/image/random")
-        return response.asKotlinResult()
+    override suspend fun randomImage(): Result<String> = safeApiCall {
+        client.get("$baseUrl/breeds/image/random").body()
     }
 
-    override suspend fun randomImage(breed: String): Result<String> {
-        val response = client.get("$baseUrl/breed/${breed.lowercase()}/images/random")
-        return response.asKotlinResult()
+    override suspend fun randomImage(breed: String): Result<String> = safeApiCall {
+        client.get("$baseUrl/breed/${breed.lowercase()}/images/random").body()
     }
 
-    override suspend fun breedImages(breed: String): Result<List<String>> {
-        val response: HttpResponse = client.get("$baseUrl/breed/${breed.lowercase()}/images")
-        return response.asKotlinResult<BreedImagesResult>().map { result ->
-            result.message
-        }
+    override suspend fun breedImages(breed: String): Result<List<String>> = safeApiCall {
+        client.get("$baseUrl/breed/${breed.lowercase()}/images")
+            .body<BreedImagesResult>().message
     }
 
-    override suspend fun subBreedImages(breed: String, subBreed: String): Result<List<String>> {
-        val response =
-            client.get("$baseUrl/breed/${breed.lowercase()}/${subBreed.lowercase()}/images")
-        return response.asKotlinResult<BreedImagesResult>().map { it.message }
+    override suspend fun subBreedImages(breed: String, subBreed: String): Result<List<String>> = safeApiCall {
+        client.get("$baseUrl/breed/${breed.lowercase()}/${subBreed.lowercase()}/images")
+            .body<BreedImagesResult>().message
     }
 
-    override suspend fun listSubBreeds(breed: String): Result<List<String>> {
-        val response: HttpResponse = client.get("$baseUrl/breed/${breed.lowercase()}/list")
-        return response.asKotlinResult<SubBreedsResult>().map { result ->
-            result.message
-        }
+    override suspend fun listSubBreeds(breed: String): Result<List<String>> = safeApiCall {
+        client.get("$baseUrl/breed/${breed.lowercase()}/list")
+            .body<SubBreedsResult>().message
     }
 }
 
-private suspend inline fun <reified T> HttpResponse.asKotlinResult(): Result<T> {
-    return if (status.isSuccess()) {
-        Result.success(body<T>())
-    } else {
-        Result.failure(Exception("Request failed with status: $status"))
-    }
+/**
+ * Wraps API calls with error handling, converting exceptions to typed DogApiError instances.
+ * Returns only Result.success or Result.failure, never throws.
+ */
+private suspend inline fun <T> safeApiCall(block: suspend () -> T): Result<T> {
+    return runCatching { block() }
+        .recoverCatching { exception ->
+            throw when (exception) {
+                is ClientRequestException ->
+                    DogApiError.HttpError(exception.response.status.value, "Client error: ${exception.message}")
+                is ServerResponseException ->
+                    DogApiError.HttpError(exception.response.status.value, "Server error: ${exception.message}")
+                is ConnectTimeoutException ->
+                    DogApiError.NetworkError("Connection timeout", exception)
+                is SocketTimeoutException ->
+                    DogApiError.NetworkError("Request timeout", exception)
+                is SerializationException ->
+                    DogApiError.SerializationError("Failed to parse response", exception)
+                else ->
+                    DogApiError.UnknownError("Request failed: ${exception.message}", exception)
+            }
+        }
 }
