@@ -47,6 +47,7 @@ public class DogApi(
 
     public companion object {
         public const val DEFAULT_BASE_URL: String = "https://dog.ceo/api"
+        internal const val HTTP_NOT_FOUND: Int = 404
 
         /**
          * Shared HttpClient instance used by createDefault().
@@ -81,21 +82,21 @@ public class DogApi(
         client.get("$baseUrl/breeds/image/random").body()
     }
 
-    override suspend fun randomImage(breed: String): Result<String> = safeApiCall {
+    override suspend fun randomImage(breed: String): Result<String> = safeApiCall(breed) {
         client.get("$baseUrl/breed/${breed.lowercase()}/images/random").body()
     }
 
-    override suspend fun breedImages(breed: String): Result<List<String>> = safeApiCall {
+    override suspend fun breedImages(breed: String): Result<List<String>> = safeApiCall(breed) {
         client.get("$baseUrl/breed/${breed.lowercase()}/images")
             .body<BreedImagesResult>().message
     }
 
-    override suspend fun subBreedImages(breed: String, subBreed: String): Result<List<String>> = safeApiCall {
+    override suspend fun subBreedImages(breed: String, subBreed: String): Result<List<String>> = safeApiCall(breed) {
         client.get("$baseUrl/breed/${breed.lowercase()}/${subBreed.lowercase()}/images")
             .body<BreedImagesResult>().message
     }
 
-    override suspend fun listSubBreeds(breed: String): Result<List<String>> = safeApiCall {
+    override suspend fun listSubBreeds(breed: String): Result<List<String>> = safeApiCall(breed) {
         client.get("$baseUrl/breed/${breed.lowercase()}/list")
             .body<SubBreedsResult>().message
     }
@@ -124,3 +125,33 @@ private suspend inline fun <T> safeApiCall(block: suspend () -> T): Result<T> {
             }
         }
 }
+
+/**
+ * Wraps breed-specific API calls with error handling.
+ * Converts 404 errors to InvalidBreedError for better semantic error handling.
+ */
+private suspend inline fun <T> safeApiCall(breedName: String, block: suspend () -> T): Result<T> {
+    return runCatching { block() }
+        .recoverCatching { exception ->
+            throw when (exception) {
+                is ClientRequestException -> {
+                    if (exception.response.status.value == DogApi.HTTP_NOT_FOUND) {
+                        DogApiError.InvalidBreedError(breedName, "Breed '$breedName' not found")
+                    } else {
+                        DogApiError.HttpError(exception.response.status.value, "Client error: ${exception.message}")
+                    }
+                }
+                is ServerResponseException ->
+                    DogApiError.HttpError(exception.response.status.value, "Server error: ${exception.message}")
+                is ConnectTimeoutException ->
+                    DogApiError.NetworkError("Connection timeout", exception)
+                is SocketTimeoutException ->
+                    DogApiError.NetworkError("Request timeout", exception)
+                is SerializationException ->
+                    DogApiError.SerializationError("Failed to parse response", exception)
+                else ->
+                    DogApiError.UnknownError("Request failed: ${exception.message}", exception)
+            }
+        }
+}
+
