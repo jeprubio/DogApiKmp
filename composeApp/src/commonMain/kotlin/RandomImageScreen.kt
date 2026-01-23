@@ -5,10 +5,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import dogapikmp.composeapp.generated.resources.Res
+import dogapikmp.composeapp.generated.resources.ic_arrow_back
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,7 +64,10 @@ class RandomImageScreen(
                     title = { Text("Random Image") },
                     navigationIcon = {
                         IconButton(onClick = { navigator?.pop() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_arrow_back),
+                                contentDescription = "Back"
+                            )
                         }
                     },
                     modifier = Modifier.statusBarsPadding(),

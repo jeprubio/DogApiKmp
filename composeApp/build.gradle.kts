@@ -2,7 +2,7 @@ import org.jetbrains.compose.ExperimentalComposeLibrary
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidApplication)
+    alias(libs.plugins.androidKmpLibrary)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
 }
@@ -10,7 +10,11 @@ plugins {
 kotlin {
     jvmToolchain(17)
 
-    androidTarget {
+    androidLibrary {
+        compileSdk { version = release(libs.versions.android.compileSdk.get().toInt())}
+        minSdk { version = release(libs.versions.android.minSdk.get().toInt())}
+        namespace = "com.telefonica.dogapi.composeapp"
+        experimentalProperties["android.experimental.kmp.enableAndroidResources"] = true
     }
     
     listOf(
@@ -27,17 +31,16 @@ kotlin {
     sourceSets {
         
         androidMain.dependencies {
-            implementation(libs.compose.ui.tooling.preview)
+            implementation(libs.androidx.compose.ui.tooling.preview)
             implementation(libs.androidx.activity.compose)
         }
         commonMain.dependencies {
             implementation(project(":libraryDogApi"))
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.materialIconsExtended)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.material3.multiplatform)
+            implementation(libs.compose.ui)
+            implementation(libs.compose.resources)
             implementation(libs.napier)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.voyager.navigator)
@@ -47,50 +50,11 @@ kotlin {
         // Adds common test dependencies
         commonTest.dependencies {
             implementation(kotlin("test"))
-
-            @OptIn(ExperimentalComposeLibrary::class)
-            implementation(compose.uiTest)
+            implementation(libs.compose.ui.test)
         }
 
         androidInstrumentedTest.dependencies {
             implementation(libs.androidx.ui.test.junit4.android)
         }
-    }
-}
-
-android {
-    namespace = "com.rumosoft.dogapikmp"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-
-    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
-    sourceSets["main"].res.srcDirs("src/androidMain/res")
-    sourceSets["main"].resources.srcDirs("src/commonMain/resources")
-
-    defaultConfig {
-        applicationId = "com.rumosoft.dogapikmp"
-        minSdk = libs.versions.android.minSdk.get().toInt()
-        targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
-    buildTypes {
-        getByName("release") {
-            isMinifyEnabled = false
-        }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    dependencies {
-        debugImplementation(libs.compose.ui.tooling)
-        debugImplementation(libs.androidx.ui.test.manifest)
     }
 }

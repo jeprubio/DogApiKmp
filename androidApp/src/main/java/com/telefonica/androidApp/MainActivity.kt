@@ -1,4 +1,4 @@
-package com.rumosoft.dogapikmp
+package com.telefonica.androidApp
 
 import App
 import android.os.Bundle
