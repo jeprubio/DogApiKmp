@@ -1,5 +1,12 @@
 package com.rumosoft.librarydogapi
 
+import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.collections.shouldNotBeEmpty
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.result.shouldBeFailure
+import io.kotest.matchers.result.shouldBeSuccess
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -11,8 +18,6 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class DogApiTest {
 
@@ -25,11 +30,15 @@ class DogApiTest {
     fun `breeds returns success with data`() = test {
         runTest {
             dogApiMock.givenSuccess()
+
             val results = sut.breeds()
 
-            assertTrue { results.isSuccess }
-            assertEquals("breed", results.getOrNull()?.first()?.name)
-            assertEquals(listOf("subBreed"), results.getOrNull()?.first()?.subBreeds)
+            results.shouldBeSuccess()
+            val breeds = results.getOrNull().shouldNotBeNull()
+            breeds.shouldNotBeEmpty()
+            val breed = breeds.first()
+            breed.name shouldBe "breed"
+            breed.subBreeds shouldContainExactly listOf("subBreed")
         }
     }
 
@@ -37,9 +46,10 @@ class DogApiTest {
     fun `breeds returns failure on server error`() = test {
         runTest {
             dogApiMock.givenFailure()
+
             val results = sut.breeds()
 
-            assertTrue { results.isFailure }
+            results.shouldBeFailure()
         }
     }
 
@@ -47,10 +57,11 @@ class DogApiTest {
     fun `breedImages returns success with image list`() = test {
         runTest {
             dogApiMock.givenSuccess()
+
             val results = sut.breedImages("pug")
 
-            assertTrue { results.isSuccess }
-            assertEquals("breedImage1", results.getOrNull()?.first())
+            results.shouldBeSuccess()
+            results.getOrNull()?.first() shouldBe "breedImage1"
         }
     }
 
@@ -60,7 +71,7 @@ class DogApiTest {
             dogApiMock.givenFailure()
             val results = sut.breedImages("pug")
 
-            assertTrue { results.isFailure }
+            results.shouldBeFailure()
         }
     }
 
@@ -68,12 +79,13 @@ class DogApiTest {
     fun `server error returns HttpError with status code`() = test {
         runTest {
             dogApiMock.givenFailure()
+
             val results = sut.breeds()
 
-            assertTrue { results.isFailure }
+            results.shouldBeFailure()
             val error = results.exceptionOrNull()
-            assertTrue { error is DogApiError.HttpError }
-            assertEquals(HTTP_INTERNAL_SERVER_ERROR, (error as DogApiError.HttpError).statusCode)
+            error.shouldBeInstanceOf<DogApiError.HttpError>()
+            error.statusCode shouldBe HTTP_INTERNAL_SERVER_ERROR
         }
     }
 
@@ -102,10 +114,10 @@ class DogApiTest {
 
             val results = api.breedImages(INVALID_BREED)
 
-            assertTrue { results.isFailure }
+            results.shouldBeFailure()
             val error = results.exceptionOrNull()
-            assertTrue { error is DogApiError.InvalidBreedError }
-            assertEquals(INVALID_BREED, (error as DogApiError.InvalidBreedError).breedName)
+            error.shouldBeInstanceOf<DogApiError.InvalidBreedError>()
+            error.breedName shouldBe INVALID_BREED
         }
     }
 
