@@ -82,23 +82,36 @@ public class DogApi(
         client.get("$baseUrl/breeds/image/random").body()
     }
 
-    override suspend fun randomImage(breed: String): Result<String> = safeApiCall(breed) {
-        client.get("$baseUrl/breed/${breed.lowercase()}/images/random").body()
+    override suspend fun randomImage(breed: String): Result<String> {
+        BreedNameValidator.validate(breed)?.let { return Result.failure(it) }
+        return safeApiCall(breed) {
+            client.get("$baseUrl/breed/${breed.lowercase()}/images/random").body()
+        }
     }
 
-    override suspend fun breedImages(breed: String): Result<List<String>> = safeApiCall(breed) {
-        client.get("$baseUrl/breed/${breed.lowercase()}/images")
-            .body<BreedImagesResult>().message
+    override suspend fun breedImages(breed: String): Result<List<String>> {
+        BreedNameValidator.validate(breed)?.let { return Result.failure(it) }
+        return safeApiCall(breed) {
+            client.get("$baseUrl/breed/${breed.lowercase()}/images")
+                .body<BreedImagesResult>().message
+        }
     }
 
-    override suspend fun subBreedImages(breed: String, subBreed: String): Result<List<String>> = safeApiCall(breed) {
-        client.get("$baseUrl/breed/${breed.lowercase()}/${subBreed.lowercase()}/images")
-            .body<BreedImagesResult>().message
+    override suspend fun subBreedImages(breed: String, subBreed: String): Result<List<String>> {
+        BreedNameValidator.validate(breed)?.let { return Result.failure(it) }
+        BreedNameValidator.validate(subBreed, "sub-breed")?.let { return Result.failure(it) }
+        return safeApiCall(breed) {
+            client.get("$baseUrl/breed/${breed.lowercase()}/${subBreed.lowercase()}/images")
+                .body<BreedImagesResult>().message
+        }
     }
 
-    override suspend fun listSubBreeds(breed: String): Result<List<String>> = safeApiCall(breed) {
-        client.get("$baseUrl/breed/${breed.lowercase()}/list")
-            .body<SubBreedsResult>().message
+    override suspend fun listSubBreeds(breed: String): Result<List<String>> {
+        BreedNameValidator.validate(breed)?.let { return Result.failure(it) }
+        return safeApiCall(breed) {
+            client.get("$baseUrl/breed/${breed.lowercase()}/list")
+                .body<SubBreedsResult>().message
+        }
     }
 }
 
