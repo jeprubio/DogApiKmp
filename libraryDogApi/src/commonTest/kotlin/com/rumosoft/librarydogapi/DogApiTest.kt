@@ -121,6 +121,20 @@ class DogApiTest {
         }
     }
 
+    @Test
+    fun `invalid breed name is rejected by validation`() {
+        runTest {
+            val api = DogApi.createDefault()
+
+            val result = api.breedImages("")
+
+            assertTrue { result.isFailure }
+            val error = result.exceptionOrNull()
+            assertTrue { error is DogApiError.InvalidBreedError }
+        }
+    }
+
+
     private fun test(block: TestScope.() -> Unit) {
         TestScope().block()
     }
