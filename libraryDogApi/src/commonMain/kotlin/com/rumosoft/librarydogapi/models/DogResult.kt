@@ -2,6 +2,7 @@ package com.rumosoft.librarydogapi.models
 
 import kotlinx.serialization.Serializable
 
+@Serializable
 public data class Breed(
     val name: String,
     val subBreeds: List<String>,
