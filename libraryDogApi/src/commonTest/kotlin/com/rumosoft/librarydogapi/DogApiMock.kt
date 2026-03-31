@@ -2,6 +2,8 @@ package com.rumosoft.librarydogapi
 
 import com.rumosoft.librarydogapi.models.BreedImagesResult
 import com.rumosoft.librarydogapi.models.BreedsResult
+import com.rumosoft.librarydogapi.models.RandomImageResult
+import com.rumosoft.librarydogapi.models.SubBreedsResult
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
@@ -12,7 +14,7 @@ import kotlinx.serialization.json.Json.Default.encodeToString
 
 class DogApiMock {
     private var isSuccess: Boolean? = null
-        get() = field ?: throw IllegalStateException("Mock has not beet initialized")
+        get() = field ?: throw IllegalStateException("Mock has not been initialized")
 
     val engine = MockEngine { request ->
         respond(
@@ -31,25 +33,36 @@ class DogApiMock {
     }
 
     private fun getResponseFor(request: HttpRequestData): String {
-        return when (request.url.toString()) {
-            "https://dog.ceo/api/breed/pug/images" -> {
-                encodeToString(
-                    BreedImagesResult.serializer(), BreedImagesResult(
-                        message = listOf(
-                            "breedImage1"
-                        ),
-                        status = "success"
-                    )
+        val url = request.url.toString()
+        return when {
+            url.contains("random") -> encodeToString(
+                RandomImageResult.serializer(),
+                RandomImageResult(
+                    message = "https://images.dog.ceo/breeds/pug/n02110958_1234.jpg",
+                    status = "success"
                 )
-            }
-            else -> {
-                encodeToString(
-                    BreedsResult.serializer(), BreedsResult(
-                        message = mapOf("breed" to listOf("subBreed")),
-                        status = "success"
-                    )
+            )
+            url.endsWith("/images") -> encodeToString(
+                BreedImagesResult.serializer(),
+                BreedImagesResult(
+                    message = listOf("breedImage1"),
+                    status = "success"
                 )
-            }
+            )
+            url.endsWith("/list") -> encodeToString(
+                SubBreedsResult.serializer(),
+                SubBreedsResult(
+                    message = listOf("subBreed1"),
+                    status = "success"
+                )
+            )
+            else -> encodeToString(
+                BreedsResult.serializer(),
+                BreedsResult(
+                    message = mapOf("breed" to listOf("subBreed")),
+                    status = "success"
+                )
+            )
         }
     }
 }

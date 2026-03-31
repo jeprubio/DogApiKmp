@@ -77,6 +77,100 @@ class DogApiTest {
     }
 
     @Test
+    fun `randomImage returns success with image URL`() = test {
+        runTest {
+            dogApiMock.givenSuccess()
+
+            val result = sut.randomImage()
+
+            result.shouldBeSuccess()
+            result.getOrNull().shouldNotBeNull()
+        }
+    }
+
+    @Test
+    fun `randomImage returns failure on server error`() = test {
+        runTest {
+            dogApiMock.givenFailure()
+
+            val result = sut.randomImage()
+
+            result.shouldBeFailure()
+        }
+    }
+
+    @Test
+    fun `randomImage for breed returns success with image URL`() = test {
+        runTest {
+            dogApiMock.givenSuccess()
+
+            val result = sut.randomImage("pug")
+
+            result.shouldBeSuccess()
+            result.getOrNull().shouldNotBeNull()
+        }
+    }
+
+    @Test
+    fun `randomImage for breed returns failure on server error`() = test {
+        runTest {
+            dogApiMock.givenFailure()
+
+            val result = sut.randomImage("pug")
+
+            result.shouldBeFailure()
+        }
+    }
+
+    @Test
+    fun `listSubBreeds returns success with sub-breed list`() = test {
+        runTest {
+            dogApiMock.givenSuccess()
+
+            val result = sut.listSubBreeds("hound")
+
+            result.shouldBeSuccess()
+            val subBreeds = result.getOrNull().shouldNotBeNull()
+            subBreeds.shouldNotBeEmpty()
+            subBreeds.first() shouldBe "subBreed1"
+        }
+    }
+
+    @Test
+    fun `listSubBreeds returns failure on server error`() = test {
+        runTest {
+            dogApiMock.givenFailure()
+
+            val result = sut.listSubBreeds("hound")
+
+            result.shouldBeFailure()
+        }
+    }
+
+    @Test
+    fun `subBreedImages returns success with image list`() = test {
+        runTest {
+            dogApiMock.givenSuccess()
+
+            val result = sut.subBreedImages("hound", "afghan")
+
+            result.shouldBeSuccess()
+            result.getOrNull().shouldNotBeNull().shouldNotBeEmpty()
+        }
+    }
+
+    @Test
+    fun `subBreedImages returns failure on server error`() = test {
+        runTest {
+            dogApiMock.givenFailure()
+
+            val result = sut.subBreedImages("hound", "afghan")
+
+            result.shouldBeFailure()
+        }
+    }
+
+    @Test
     fun `server error returns HttpError with status code`() = test {
         runTest {
             dogApiMock.givenFailure()
