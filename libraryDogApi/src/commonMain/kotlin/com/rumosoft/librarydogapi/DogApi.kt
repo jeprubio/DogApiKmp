@@ -58,7 +58,10 @@ public class DogApi(
             HttpClient {
                 expectSuccess = true  // Throw exceptions for non-2xx responses
                 install(ContentNegotiation) {
-                    json()
+                    json(kotlinx.serialization.json.Json {
+                        ignoreUnknownKeys = true
+                        isLenient = true
+                    })
                 }
             }
         }
