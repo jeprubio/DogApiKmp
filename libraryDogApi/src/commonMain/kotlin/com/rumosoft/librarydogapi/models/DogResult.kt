@@ -20,6 +20,12 @@ internal data class SubBreedsResult(
 )
 
 @Serializable
+internal data class RandomImageResult(
+    val message: String,
+    val status: String
+)
+
+@Serializable
 internal data class BreedImagesResult(
     val message: List<String>,
     val status: String

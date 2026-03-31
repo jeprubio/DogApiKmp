@@ -3,6 +3,7 @@ package com.rumosoft.librarydogapi
 import com.rumosoft.librarydogapi.models.Breed
 import com.rumosoft.librarydogapi.models.BreedImagesResult
 import com.rumosoft.librarydogapi.models.BreedsResult
+import com.rumosoft.librarydogapi.models.RandomImageResult
 import com.rumosoft.librarydogapi.models.SubBreedsResult
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -79,13 +80,15 @@ public class DogApi(
     }
 
     override suspend fun randomImage(): Result<String> = safeApiCall {
-        client.get("$baseUrl/breeds/image/random").body()
+        client.get("$baseUrl/breeds/image/random")
+            .body<RandomImageResult>().message
     }
 
     override suspend fun randomImage(breed: String): Result<String> {
         BreedNameValidator.validate(breed)?.let { return Result.failure(it) }
         return safeApiCall(breed) {
-            client.get("$baseUrl/breed/${breed.lowercase()}/images/random").body()
+            client.get("$baseUrl/breed/${breed.lowercase()}/images/random")
+                .body<RandomImageResult>().message
         }
     }
 
