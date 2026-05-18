@@ -1,14 +1,14 @@
 [versions]
 agp = "9.2.1"
 #Keep
-android-compileSdk = "36"
+android-compileSdk = "37"
 #Keep
 android-minSdk = "26"
 #Keep
 androidx-activityCompose = "1.13.0"
 compose-multiplatform = "1.11.0"
 compose-material3-multiplatform = "1.9.0"
-kotlin = "2.3.20"
+kotlin = "2.3.21"
 kotestAssertionsCore = "6.1.11"
 kotlinxCoroutines = "1.11.0"
 ktorVersion = "3.4.3"
@@ -16,7 +16,7 @@ napier = "2.7.1"
 uiTestJunit4Android = "1.11.1"
 voyager = "1.0.1"
 kmmbridge = "1.2.1"
-skie = "0.10.11"
+skie = "0.10.12"
 dependencies = "0.54.0"
 coreKtx = "1.18.0"
 junit = "4.13.2"

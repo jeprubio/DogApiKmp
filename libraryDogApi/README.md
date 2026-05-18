@@ -127,7 +127,7 @@ Task {
 
 #### Using Completion Handlers (Alternative)
 
-Extension functions provide callback-based APIs:
+Extension functions provide callback-based APIs. With SKIE enabled, these are exposed as native Swift extensions directly on the `DogApiClient` protocol:
 
 ```swift
 import LibraryDogApi
@@ -135,7 +135,7 @@ import LibraryDogApi
 let api = DogApi.Companion().createDefault()
 
 // Fetch breeds with callback
-DogApiExtensionsKt.breeds(api) { result in
+api.breeds { result in
     if let breeds = result.getOrNull() {
         for breed in breeds {
             print("\(breed.name)")
@@ -144,9 +144,16 @@ DogApiExtensionsKt.breeds(api) { result in
 }
 
 // Random image with callback
-DogApiExtensionsKt.randomImage(api) { result in
+api.randomImage { result in
     if let imageUrl = result.getOrNull() {
         print("Image: \(imageUrl)")
+    }
+}
+
+// Random image for a specific breed with callback
+api.randomImageForBreed(breed: "husky") { result in
+    if let imageUrl = result.getOrNull() {
+        print("Husky image: \(imageUrl)")
     }
 }
 ```
@@ -171,12 +178,8 @@ class BreedViewModel {
 let viewModel = BreedViewModel(dogApi: DogApi.Companion().createDefault())
 
 // In tests
-let mockApi = MockDogApiClient(
-    breedsResult: KotlinResult(value: [
-        Breed(name: "husky", subBreeds: [])
-    ])
-)
-let viewModel = BreedViewModel(dogApi: mockApi)
+// For Swift UI testing, create a custom Swift class implementing DogApiClient.
+let viewModel = BreedViewModel(dogApi: DogApi.Companion().createDefault())
 ```
 
 ## API Reference
