@@ -24,7 +24,7 @@ kotlin {
     jvmToolchain(17)
     // withSourcesJar(publish = false)
 
-    androidLibrary {
+    android {
         namespace = "com.rumosoft.dogapikmp"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()

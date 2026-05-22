@@ -10,7 +10,7 @@ plugins {
 kotlin {
     jvmToolchain(17)
 
-    androidLibrary {
+    android {
         compileSdk { version = release(libs.versions.android.compileSdk.get().toInt())}
         minSdk { version = release(libs.versions.android.minSdk.get().toInt())}
         namespace = "com.telefonica.dogapi.composeapp"
