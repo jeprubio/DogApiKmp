@@ -10,6 +10,7 @@ import io.ktor.client.call.body
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
@@ -50,6 +51,10 @@ public class DogApi(
         public const val DEFAULT_BASE_URL: String = "https://dog.ceo/api"
         internal const val HTTP_NOT_FOUND: Int = 404
 
+        public const val DEFAULT_CONNECT_TIMEOUT_MS: Long = 15_000L
+        public const val DEFAULT_REQUEST_TIMEOUT_MS: Long = 30_000L
+        public const val DEFAULT_SOCKET_TIMEOUT_MS: Long  = 15_000L
+
         /**
          * Shared HttpClient instance used by createDefault().
          * This client is reused across all default DogApi instances for efficiency.
@@ -62,6 +67,11 @@ public class DogApi(
                         ignoreUnknownKeys = true
                         isLenient = true
                     })
+                }
+                install(HttpTimeout) {
+                    connectTimeoutMillis = DEFAULT_CONNECT_TIMEOUT_MS
+                    requestTimeoutMillis = DEFAULT_REQUEST_TIMEOUT_MS
+                    socketTimeoutMillis  = DEFAULT_SOCKET_TIMEOUT_MS
                 }
             }
         }
