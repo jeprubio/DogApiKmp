@@ -217,6 +217,47 @@ class DogApiTest {
     }
 
     @Test
+    fun `invalid breed is logged at debug level not error level`() {
+        runTest {
+            val client = HttpClient(
+                MockEngine { _ ->
+                    respond(
+                        content = "",
+                        status = HttpStatusCode.NotFound,
+                        headers = headersOf(HttpHeaders.ContentType, "application/json")
+                    )
+                }
+            ) {
+                expectSuccess = true
+                install(ContentNegotiation) {
+                    json(Json { isLenient = true; ignoreUnknownKeys = true })
+                }
+            }
+            val logger = CapturingLogger()
+            val api = DogApi(client, logger = logger)
+
+            api.breedImages(INVALID_BREED)
+
+            assertTrue(logger.errorMessages.isEmpty(), "InvalidBreedError should not be logged at error level")
+            assertTrue(
+                logger.debugMessages.any { it.contains(INVALID_BREED) },
+                "InvalidBreedError should be logged at debug level",
+            )
+        }
+    }
+
+    @Test
+    fun `server error is logged at error level`() = test {
+        runTest {
+            dogApiMock.givenFailure()
+
+            sut.breeds()
+
+            assertTrue(logger.errorMessages.isNotEmpty(), "Server error should be logged at error level")
+        }
+    }
+
+    @Test
     fun `invalid breed name is rejected by validation`() {
         runTest {
             val api = DogApi.createDefault()
@@ -236,6 +277,7 @@ class DogApiTest {
 
     private class TestScope {
         val dogApiMock = DogApiMock()
+        val logger = CapturingLogger()
         val httpClient = HttpClient(
             engine = dogApiMock.engine
         ) {
@@ -248,6 +290,15 @@ class DogApiTest {
                 })
             }
         }
-        val sut: DogApiClient = DogApi(httpClient)
+        val sut: DogApiClient = DogApi(httpClient, logger = logger)
     }
 }
+
+private class CapturingLogger : DogApiLogger {
+    val debugMessages = mutableListOf<String>()
+    val errorMessages = mutableListOf<String>()
+
+    override fun d(msg: String) { debugMessages += msg }
+    override fun e(msg: String, throwable: Throwable?) { errorMessages += msg }
+}
+

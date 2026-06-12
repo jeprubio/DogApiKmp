@@ -89,6 +89,78 @@ val repository = BreedRepository(MockDogApiClient(
 val api = DogApi.createDefault(baseUrl = "https://my-test-server.com/api")
 ```
 
+#### Logging
+
+By default the library is silent (`NoOpDogApiLogger`). Pass a `DogApiLogger` to `createDefault` to see request/response logs. Each call logs its intent and the HTTP status at debug level; unexpected errors are logged at error level (`InvalidBreedError` — a user typing a wrong breed — is intentionally logged at debug level only).
+
+**Android-only app (Kotlin)**
+
+Use Android's built-in `Log` directly:
+
+```kotlin
+val api = DogApi.createDefault(
+    logger = object : DogApiLogger {
+        override fun d(msg: String) = Log.d("DogApi", msg)
+        override fun e(msg: String, throwable: Throwable?) = Log.e("DogApi", msg, throwable)
+    }
+)
+```
+
+**iOS-only app (consuming the XCFramework from Swift)**
+
+`DogApiLogger` is a Kotlin interface, which Swift cannot implement directly. Create a small bridge class in the `iosMain` Kotlin source set of the library (or your own thin wrapper framework):
+
+```kotlin
+// iosMain/kotlin/com/rumosoft/librarydogapi/OSLogLogger.kt
+import platform.Foundation.NSLog
+
+class OSLogLogger : DogApiLogger {
+    override fun d(msg: String) = NSLog("[DogApi] %s", msg)
+    override fun e(msg: String, throwable: Throwable?) = NSLog("[DogApi] ERROR %s", msg)
+}
+```
+
+Then pass it from Swift:
+
+```swift
+import LibraryDogApi
+
+let api = DogApi.Companion().createDefault(logger: OSLogLogger())
+```
+
+**Kotlin Multiplatform app (shared Kotlin code)**
+
+Use [Napier](https://github.com/AAkira/Napier), which works on both Android and iOS from shared Kotlin code:
+
+```kotlin
+// In commonMain (or wherever you create the DogApi instance)
+val api = DogApi.createDefault(
+    logger = object : DogApiLogger {
+        override fun d(msg: String) = Napier.d(msg, tag = "DogApi")
+        override fun e(msg: String, throwable: Throwable?) = Napier.e(msg, throwable, tag = "DogApi")
+    }
+)
+```
+
+Napier must be initialised once per platform before any logs are emitted:
+
+```kotlin
+// Android — Application.onCreate()
+Napier.base(DebugAntilog())
+```
+
+```swift
+// iOS — iOSApp.swift or AppDelegate
+NapierProxyKt.debugBuild()
+```
+
+**Expected output (all platforms)**
+
+```
+D/DogApi: Fetching all images for breed 'husky'
+D/DogApi: GET https://dog.ceo/api/breed/husky/images → 200
+```
+
 ### iOS / Swift
 
 #### Using Async/Await (Recommended)
@@ -176,11 +248,11 @@ class BreedViewModel {
 
 // In production
 let viewModel = BreedViewModel(dogApi: DogApi.Companion().createDefault())
-
-// In tests
-// For Swift UI testing, create a custom Swift class implementing DogApiClient.
-let viewModel = BreedViewModel(dogApi: DogApi.Companion().createDefault())
 ```
+
+#### Logging
+
+See the [Logging](#logging) section under *Android / Kotlin* above — the iOS-only and KMP scenarios are both covered there.
 
 ## API Reference
 
@@ -197,9 +269,17 @@ The main interface for accessing the Dog API:
 
 All methods return `Result<T>` for safe error handling.
 
+### DogApiLogger
+
+A simple logging interface with two methods:
+
+- `d(msg: String)` — debug-level message (requests, responses, expected user errors such as `InvalidBreedError`)
+- `e(msg: String, throwable: Throwable?)` — error-level message (network failures, server errors, parsing errors)
+
+The default implementation is `NoOpDogApiLogger`, which silently discards all output. See the [Logging](#logging) section above for usage examples.
+
 ### MockDogApiClient
 
-A mock implementation for testing:
 
 ```kotlin
 val mockApi = MockDogApiClient(

@@ -25,13 +25,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
-import com.rumosoft.librarydogapi.DogApi
 import com.rumosoft.librarydogapi.DogApiClient
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.launch
 
 class ListAllBreedsScreen(
-    private val dogApi: DogApiClient = DogApi.createDefault(),
+    private val dogApi: DogApiClient = createDogApiWithLogging(),
     val modifier: Modifier = Modifier
 ) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
