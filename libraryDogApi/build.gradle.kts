@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "com.rumosoft.dogapi"
-version = "0.9"
+version = libs.versions.libraryDogApi.get()
 
 publishing {
     repositories {
@@ -22,7 +22,7 @@ kotlin {
     explicitApi()
 
     jvmToolchain(17)
-    // withSourcesJar(publish = false)
+    withSourcesJar(publish = true)
 
     android {
         namespace = "com.rumosoft.dogapikmp"
@@ -63,7 +63,7 @@ kotlin {
 }
 
 kmmbridge {
-    buildType.set(NativeBuildType.DEBUG)
+    buildType.set(NativeBuildType.RELEASE)
     frameworkName.set("LibraryDogApi")
 
     mavenPublishArtifacts()

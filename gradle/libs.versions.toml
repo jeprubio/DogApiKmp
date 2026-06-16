@@ -1,5 +1,6 @@
 [versions]
 agp = "9.2.1"
+libraryDogApi = "0.9"
 #Keep
 android-compileSdk = "37"
 #Keep
