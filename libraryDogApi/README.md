@@ -199,15 +199,17 @@ Task {
 
 #### Using Completion Handlers (Alternative)
 
-Extension functions provide callback-based APIs. With SKIE enabled, these are exposed as native Swift extensions directly on the `DogApiClient` protocol:
+Extension functions provide callback-based APIs. With SKIE enabled, these are exposed as native Swift extensions directly on the `DogApiClient` protocol.
+
+Each function returns a `Job` so you can cancel the request before it completes — for example when a view is dismissed.
 
 ```swift
 import LibraryDogApi
 
 let api = DogApi.Companion().createDefault()
 
-// Fetch breeds with callback
-api.breeds { result in
+// Fetch breeds with callback — store the Job to cancel later
+let breedsJob = api.breeds { [weak self] result in
     if let breeds = result.getOrNull() {
         for breed in breeds {
             print("\(breed.name)")
@@ -216,18 +218,21 @@ api.breeds { result in
 }
 
 // Random image with callback
-api.randomImage { result in
+let imageJob = api.randomImage { [weak self] result in
     if let imageUrl = result.getOrNull() {
         print("Image: \(imageUrl)")
     }
 }
 
 // Random image for a specific breed with callback
-api.randomImageForBreed(breed: "husky") { result in
+let huskyJob = api.randomImageForBreed(breed: "husky") { [weak self] result in
     if let imageUrl = result.getOrNull() {
         print("Husky image: \(imageUrl)")
     }
 }
+
+// Cancel any in-flight request (e.g. in deinit or onDisappear)
+breedsJob.cancel(message: nil)
 ```
 
 #### Protocol-based Dependency Injection
