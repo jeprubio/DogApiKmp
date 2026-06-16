@@ -64,10 +64,7 @@ public class DogApi(
             HttpClient {
                 expectSuccess = true  // Throw exceptions for non-2xx responses
                 install(ContentNegotiation) {
-                    json(kotlinx.serialization.json.Json {
-                        ignoreUnknownKeys = true
-                        isLenient = true
-                    })
+                    json(DogJson)
                 }
                 install(HttpTimeout) {
                     connectTimeoutMillis = DEFAULT_CONNECT_TIMEOUT_MS
@@ -169,7 +166,7 @@ private suspend inline fun <T> safeApiCall(
         .recoverCatching { exception ->
             val error = exception.toDogApiError(breedName)
             if (error is DogApiError.InvalidBreedError) {
-                logger.d(error.message)
+                logger.d(error.message ?: "Unknown error")
             } else {
                 logger.e(error.message ?: "Unknown error", exception)
             }

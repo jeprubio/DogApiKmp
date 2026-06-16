@@ -36,7 +36,7 @@ class BreedNameValidatorTest {
 
         result.shouldNotBeNull()
         result.shouldBeInstanceOf<DogApiError.InvalidBreedError>()
-        assertTrue { result.message.contains("cannot be blank") }
+        assertTrue { result.message!!.contains("cannot be blank") }
     }
 
     @Test
@@ -45,7 +45,7 @@ class BreedNameValidatorTest {
 
         result.shouldNotBeNull()
         result.shouldBeInstanceOf<DogApiError.InvalidBreedError>()
-        assertTrue { result.message.contains("cannot be blank") }
+        assertTrue { result.message!!.contains("cannot be blank") }
     }
 
     @Test
@@ -54,7 +54,7 @@ class BreedNameValidatorTest {
 
         result.shouldNotBeNull()
         result.shouldBeInstanceOf<DogApiError.InvalidBreedError>()
-        assertTrue { result.message.contains("cannot contain spaces") }
+        assertTrue { result.message!!.contains("cannot contain spaces") }
     }
 
     @Test
@@ -63,7 +63,7 @@ class BreedNameValidatorTest {
 
         result.shouldNotBeNull()
         result.shouldBeInstanceOf<DogApiError.InvalidBreedError>()
-        assertTrue { result.message.contains("cannot contain spaces") }
+        assertTrue { result.message!!.contains("cannot contain spaces") }
     }
 
     @Test
@@ -72,7 +72,7 @@ class BreedNameValidatorTest {
 
         result.shouldNotBeNull()
         result.shouldBeInstanceOf<DogApiError.InvalidBreedError>()
-        assertTrue { result.message.contains("can only contain") }
+        assertTrue { result.message!!.contains("can only contain") }
     }
 
     @Test
@@ -81,7 +81,7 @@ class BreedNameValidatorTest {
 
         result.shouldNotBeNull()
         result.shouldBeInstanceOf<DogApiError.InvalidBreedError>()
-        assertTrue { result.message.contains("can only contain") }
+        assertTrue { result.message!!.contains("can only contain") }
     }
 
     @Test
@@ -89,7 +89,7 @@ class BreedNameValidatorTest {
         val result = BreedNameValidator.validate("", "sub-breed")
 
         result.shouldNotBeNull()
-        assertTrue { result.message.contains("sub-breed") }
+        assertTrue { result.message!!.contains("sub-breed") }
     }
 
     @Test

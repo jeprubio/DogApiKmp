@@ -16,7 +16,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import kotlin.test.assertTrue
 import kotlin.test.Test
 
@@ -198,11 +197,7 @@ class DogApiTest {
             ) {
                 expectSuccess = true
                 install(ContentNegotiation) {
-                    json(Json {
-                        prettyPrint = true
-                        isLenient = true
-                        ignoreUnknownKeys = true
-                    })
+                    json(DogJson)
                 }
             }
             val api = DogApi(client)
@@ -230,7 +225,7 @@ class DogApiTest {
             ) {
                 expectSuccess = true
                 install(ContentNegotiation) {
-                    json(Json { isLenient = true; ignoreUnknownKeys = true })
+                    json(DogJson)
                 }
             }
             val logger = CapturingLogger()
@@ -283,11 +278,7 @@ class DogApiTest {
         ) {
             expectSuccess = true  // Make Ktor throw exceptions for non-2xx responses
             install(ContentNegotiation) {
-                json(Json {
-                    prettyPrint = true
-                    isLenient = true
-                    ignoreUnknownKeys = true
-                })
+                json(DogJson)
             }
         }
         val sut: DogApiClient = DogApi(httpClient, logger = logger)
