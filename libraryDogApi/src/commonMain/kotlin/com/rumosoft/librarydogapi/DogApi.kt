@@ -154,66 +154,48 @@ public class DogApi(
 }
 
 /**
- * Wraps API calls with error handling, converting exceptions to typed DogApiError instances.
- * Returns only Result.success or Result.failure, never throws.
+ * Wraps API calls with error handling, converting exceptions to typed [DogApiError] instances.
+ * Returns only [Result.success] or [Result.failure], never throws.
+ *
+ * @param breedName When non-null, 404 responses are mapped to [DogApiError.InvalidBreedError]
+ *   and logged at debug level; all other errors are logged at error level.
  */
 private suspend inline fun <T> safeApiCall(
+    breedName: String? = null,
     logger: DogApiLogger = NoOpDogApiLogger,
     block: suspend () -> T,
-): Result<T> {
-    return runCatching { block() }
+): Result<T> =
+    runCatching { block() }
         .recoverCatching { exception ->
-            throw when (exception) {
-                is ClientRequestException ->
-                    DogApiError.HttpError(exception.response.status.value, "Client error: ${exception.message}")
-                is ServerResponseException ->
-                    DogApiError.HttpError(exception.response.status.value, "Server error: ${exception.message}")
-                is ConnectTimeoutException ->
-                    DogApiError.NetworkError("Connection timeout", exception)
-                is SocketTimeoutException ->
-                    DogApiError.NetworkError("Request timeout", exception)
-                is SerializationException ->
-                    DogApiError.SerializationError("Failed to parse response", exception)
-                else ->
-                    DogApiError.UnknownError("Request failed: ${exception.message}", exception)
-            }.also { error -> logger.e(error.message ?: "Unknown error", exception) }
+            val error = exception.toDogApiError(breedName)
+            if (error is DogApiError.InvalidBreedError) {
+                logger.d(error.message)
+            } else {
+                logger.e(error.message ?: "Unknown error", exception)
+            }
+            throw error
         }
-}
 
 /**
- * Wraps breed-specific API calls with error handling.
- * Converts 404 errors to InvalidBreedError for better semantic error handling.
+ * Maps a [Throwable] to a typed [DogApiError].
+ *
+ * @param breedName When non-null, a 404 [ClientRequestException] is mapped to
+ *   [DogApiError.InvalidBreedError] instead of [DogApiError.HttpError].
  */
-private suspend inline fun <T> safeApiCall(
-    breedName: String,
-    logger: DogApiLogger = NoOpDogApiLogger,
-    block: suspend () -> T,
-): Result<T> {
-    return runCatching { block() }
-        .recoverCatching { exception ->
-            throw when (exception) {
-                is ClientRequestException ->
-                    if (exception.response.status.value == DogApi.HTTP_NOT_FOUND) {
-                        DogApiError.InvalidBreedError(breedName, "Breed '$breedName' not found")
-                    } else {
-                        DogApiError.HttpError(exception.response.status.value, "Client error: ${exception.message}")
-                    }
-                is ServerResponseException ->
-                    DogApiError.HttpError(exception.response.status.value, "Server error: ${exception.message}")
-                is ConnectTimeoutException ->
-                    DogApiError.NetworkError("Connection timeout", exception)
-                is SocketTimeoutException ->
-                    DogApiError.NetworkError("Request timeout", exception)
-                is SerializationException ->
-                    DogApiError.SerializationError("Failed to parse response", exception)
-                else ->
-                    DogApiError.UnknownError("Request failed: ${exception.message}", exception)
-            }.also { error ->
-                if (error is DogApiError.InvalidBreedError) {
-                    logger.d(error.message)
-                } else {
-                    logger.e(error.message ?: "Unknown error", exception)
-                }
-            }
-        }
+private fun Throwable.toDogApiError(breedName: String? = null): DogApiError = when (this) {
+    is ClientRequestException ->
+        if (breedName != null && response.status.value == DogApi.HTTP_NOT_FOUND)
+            DogApiError.InvalidBreedError(breedName, "Breed '$breedName' not found")
+        else
+            DogApiError.HttpError(response.status.value, "Client error: $message")
+    is ServerResponseException ->
+        DogApiError.HttpError(response.status.value, "Server error: $message")
+    is ConnectTimeoutException ->
+        DogApiError.NetworkError("Connection timeout", this)
+    is SocketTimeoutException ->
+        DogApiError.NetworkError("Request timeout", this)
+    is SerializationException ->
+        DogApiError.SerializationError("Failed to parse response", this)
+    else ->
+        DogApiError.UnknownError("Request failed: $message", this)
 }
