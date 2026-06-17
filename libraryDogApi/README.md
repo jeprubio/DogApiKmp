@@ -299,6 +299,7 @@ Custom error types for better error handling:
 
 - `NetworkError` - Connection or network issues
 - `HttpError` - HTTP status code errors
+- `RemoteApiError` - Dog CEO API-level errors returned in a response body
 - `SerializationError` - JSON parsing errors
 - `InvalidBreedError` - Invalid breed name
 - `UnknownError` - Unexpected errors
@@ -378,6 +379,7 @@ result.onSuccess { breeds ->
     when (error) {
         is DogApiError.NetworkError -> // Handle network issues
         is DogApiError.HttpError -> // Handle HTTP errors (status code available)
+        is DogApiError.RemoteApiError -> // Handle Dog CEO API-level errors
         is DogApiError.SerializationError -> // Handle parsing errors
         else -> // Handle other errors
     }

@@ -3,10 +3,10 @@ package com.rumosoft.librarydogapi
 import com.rumosoft.librarydogapi.models.Breed
 import com.rumosoft.librarydogapi.models.BreedImagesResult
 import com.rumosoft.librarydogapi.models.BreedsResult
+import com.rumosoft.librarydogapi.models.DogApiStatusResult
 import com.rumosoft.librarydogapi.models.RandomImageResult
 import com.rumosoft.librarydogapi.models.SubBreedsResult
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.ClientRequestException
@@ -15,9 +15,12 @@ import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.serialization.JsonConvertException
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 
 /**
  * Default implementation of the Dog API client.
@@ -149,7 +152,18 @@ public class DogApi(
     private suspend inline fun <reified T> getAndLog(url: String): T {
         val response: HttpResponse = client.get(url)
         logger.d("GET $url → ${response.status.value}")
-        return response.body<T>()
+        val body = response.bodyAsText()
+        validateStatus(body)
+        return DogJson.decodeFromString<T>(body)
+    }
+
+    private fun validateStatus(body: String) {
+        val statusResult = DogJson.decodeFromString<DogApiStatusResult>(body)
+        if (statusResult.status == "success") return
+
+        val apiMessage = (statusResult.message as? JsonPrimitive)?.contentOrNull
+            ?: statusResult.message?.toString()
+        throw DogApiError.RemoteApiError(status = statusResult.status, apiMessage = apiMessage)
     }
 }
 
@@ -183,6 +197,8 @@ private suspend inline fun <T> safeApiCall(
  *   [DogApiError.InvalidBreedError] instead of [DogApiError.HttpError].
  */
 private fun Throwable.toDogApiError(breedName: String? = null): DogApiError = when (this) {
+    is DogApiError ->
+        this
     is ClientRequestException ->
         if (breedName != null && response.status.value == DogApi.HTTP_NOT_FOUND)
             DogApiError.InvalidBreedError(breedName, "Breed '$breedName' not found")

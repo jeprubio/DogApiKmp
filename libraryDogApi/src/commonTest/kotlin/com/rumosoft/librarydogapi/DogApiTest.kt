@@ -268,6 +268,42 @@ class DogApiTest {
     }
 
     @Test
+    fun `breeds returns RemoteApiError when API status is error`() = runTest {
+        val api = apiReturningApiError()
+
+        val result = api.breeds()
+
+        result.shouldBeRemoteApiError()
+    }
+
+    @Test
+    fun `randomImage returns RemoteApiError when API status is error`() = runTest {
+        val api = apiReturningApiError()
+
+        val result = api.randomImage()
+
+        result.shouldBeRemoteApiError()
+    }
+
+    @Test
+    fun `breedImages returns RemoteApiError when API status is error`() = runTest {
+        val api = apiReturningApiError()
+
+        val result = api.breedImages("pug")
+
+        result.shouldBeRemoteApiError()
+    }
+
+    @Test
+    fun `listSubBreeds returns RemoteApiError when API status is error`() = runTest {
+        val api = apiReturningApiError()
+
+        val result = api.listSubBreeds("hound")
+
+        result.shouldBeRemoteApiError()
+    }
+
+    @Test
     fun `unexpected exception returns UnknownError`() = runTest {
         val client = httpClient(
             MockEngine { _ ->
@@ -283,6 +319,26 @@ class DogApiTest {
     }
 
     private fun test(block: suspend ApiTestScope.() -> Unit) = runTest { ApiTestScope().block() }
+
+    private fun apiReturningApiError(): DogApiClient {
+        val client = httpClient(
+            MockEngine { _ ->
+                respond(
+                    content = """{"message":"Breed not found","status":"error"}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+            }
+        )
+        return DogApi(client)
+    }
+
+    private fun Result<*>.shouldBeRemoteApiError() {
+        shouldBeFailure()
+        val error = exceptionOrNull().shouldBeInstanceOf<DogApiError.RemoteApiError>()
+        error.status shouldBe "error"
+        error.apiMessage shouldBe "Breed not found"
+    }
 
     private class ApiTestScope {
         val dogApiMock = DogApiMock()

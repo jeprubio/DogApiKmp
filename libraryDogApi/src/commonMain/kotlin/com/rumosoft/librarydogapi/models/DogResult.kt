@@ -1,11 +1,18 @@
 package com.rumosoft.librarydogapi.models
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 public data class Breed(
     val name: String,
     val subBreeds: List<String>,
+)
+
+@Serializable
+internal data class DogApiStatusResult(
+    val status: String,
+    val message: JsonElement? = null,
 )
 
 @Serializable

@@ -26,6 +26,16 @@ public sealed class DogApiError(
     ) : DogApiError(message)
 
     /**
+     * Dog CEO API-level errors returned in a decoded response body.
+     */
+    public class RemoteApiError(
+        public val status: String,
+        public val apiMessage: String? = null,
+        message: String = apiMessage?.let { "Dog API returned status '$status': $it" }
+            ?: "Dog API returned status '$status'",
+    ) : DogApiError(message)
+
+    /**
      * Serialization/deserialization errors
      */
     public class SerializationError(
