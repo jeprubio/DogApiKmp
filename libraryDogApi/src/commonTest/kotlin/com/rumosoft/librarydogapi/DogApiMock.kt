@@ -13,23 +13,29 @@ import io.ktor.http.headersOf
 import kotlinx.serialization.json.Json.Default.encodeToString
 
 class DogApiMock {
-    private var isSuccess: Boolean? = null
-        get() = field ?: throw IllegalStateException("Mock has not been initialized")
+    private enum class State { UNSET, SUCCESS, FAILURE }
+
+    private var state: State = State.UNSET
 
     val engine = MockEngine { request ->
         respond(
             content = getResponseFor(request),
-            status = if (isSuccess == true) HttpStatusCode.OK else HttpStatusCode.InternalServerError,
+            status = if (isSuccess()) HttpStatusCode.OK else HttpStatusCode.InternalServerError,
             headers = headersOf(HttpHeaders.ContentType, "application/json")
         )
     }
 
     fun givenSuccess() {
-        isSuccess = true
+        state = State.SUCCESS
     }
 
     fun givenFailure() {
-        isSuccess = false
+        state = State.FAILURE
+    }
+
+    private fun isSuccess(): Boolean {
+        check(state != State.UNSET) { "Mock has not been initialized" }
+        return state == State.SUCCESS
     }
 
     private fun getResponseFor(request: HttpRequestData): String {

@@ -15,6 +15,7 @@ import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.statement.HttpResponse
+import io.ktor.serialization.JsonConvertException
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.SerializationException
 
@@ -122,8 +123,10 @@ public class DogApi(
     }
 
     override suspend fun subBreedImages(breed: String, subBreed: String): Result<List<String>> {
-        BreedNameValidator.validate(breed)?.let { return Result.failure(it) }
-        BreedNameValidator.validate(subBreed, "sub-breed")?.let { return Result.failure(it) }
+        val validationError = BreedNameValidator.validate(breed)
+            ?: BreedNameValidator.validate(subBreed, "sub-breed")
+        if (validationError != null) return Result.failure(validationError)
+
         return safeApiCall(breedName = breed, logger = logger) {
             logger.d("Fetching images for sub-breed '$breed/$subBreed'")
             val url = "$baseUrl/breed/${breed.lowercase()}/${subBreed.lowercase()}/images"
@@ -191,7 +194,7 @@ private fun Throwable.toDogApiError(breedName: String? = null): DogApiError = wh
         DogApiError.NetworkError("Connection timeout", this)
     is SocketTimeoutException ->
         DogApiError.NetworkError("Request timeout", this)
-    is SerializationException ->
+    is JsonConvertException, is SerializationException ->
         DogApiError.SerializationError("Failed to parse response", this)
     else ->
         DogApiError.UnknownError("Request failed: $message", this)

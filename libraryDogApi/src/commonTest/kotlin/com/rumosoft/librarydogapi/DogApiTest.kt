@@ -10,6 +10,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -21,166 +22,135 @@ import kotlin.test.Test
 
 class DogApiTest {
 
-    companion object {
-        private const val INVALID_BREED = "invalidbreed"
-        private const val HTTP_INTERNAL_SERVER_ERROR = 500
-    }
-
     @Test
     fun `breeds returns success with data`() = test {
-        runTest {
-            dogApiMock.givenSuccess()
+        dogApiMock.givenSuccess()
 
-            val results = sut.breeds()
+        val results = sut.breeds()
 
-            results.shouldBeSuccess()
-            val breeds = results.getOrNull().shouldNotBeNull()
-            breeds.shouldNotBeEmpty()
-            val breed = breeds.first()
-            breed.name shouldBe "breed"
-            breed.subBreeds shouldContainExactly listOf("subBreed")
-        }
+        results.shouldBeSuccess()
+        val breeds = results.getOrNull().shouldNotBeNull()
+        breeds.shouldNotBeEmpty()
+        val breed = breeds.first()
+        breed.name shouldBe "breed"
+        breed.subBreeds shouldContainExactly listOf("subBreed")
     }
 
     @Test
     fun `breeds returns failure on server error`() = test {
-        runTest {
-            dogApiMock.givenFailure()
+        dogApiMock.givenFailure()
 
-            val results = sut.breeds()
+        val results = sut.breeds()
 
-            results.shouldBeFailure()
-        }
+        results.shouldBeFailure()
     }
 
     @Test
     fun `breedImages returns success with image list`() = test {
-        runTest {
-            dogApiMock.givenSuccess()
+        dogApiMock.givenSuccess()
 
-            val results = sut.breedImages("pug")
+        val results = sut.breedImages("pug")
 
-            results.shouldBeSuccess()
-            results.getOrNull()?.first() shouldBe "breedImage1"
-        }
+        results.shouldBeSuccess()
+        results.getOrNull()?.first() shouldBe "breedImage1"
     }
 
     @Test
     fun `breedImages returns failure on server error`() = test {
-        runTest {
-            dogApiMock.givenFailure()
-            val results = sut.breedImages("pug")
+        dogApiMock.givenFailure()
+        val results = sut.breedImages("pug")
 
-            results.shouldBeFailure()
-        }
+        results.shouldBeFailure()
     }
 
     @Test
     fun `randomImage returns success with image URL`() = test {
-        runTest {
-            dogApiMock.givenSuccess()
+        dogApiMock.givenSuccess()
 
-            val result = sut.randomImage()
+        val result = sut.randomImage()
 
-            result.shouldBeSuccess()
-            result.getOrNull().shouldNotBeNull()
-        }
+        result.shouldBeSuccess()
+        result.getOrNull().shouldNotBeNull()
     }
 
     @Test
     fun `randomImage returns failure on server error`() = test {
-        runTest {
-            dogApiMock.givenFailure()
+        dogApiMock.givenFailure()
 
-            val result = sut.randomImage()
+        val result = sut.randomImage()
 
-            result.shouldBeFailure()
-        }
+        result.shouldBeFailure()
     }
 
     @Test
     fun `randomImage for breed returns success with image URL`() = test {
-        runTest {
-            dogApiMock.givenSuccess()
+        dogApiMock.givenSuccess()
 
-            val result = sut.randomImage("pug")
+        val result = sut.randomImage("pug")
 
-            result.shouldBeSuccess()
-            result.getOrNull().shouldNotBeNull()
-        }
+        result.shouldBeSuccess()
+        result.getOrNull().shouldNotBeNull()
     }
 
     @Test
     fun `randomImage for breed returns failure on server error`() = test {
-        runTest {
-            dogApiMock.givenFailure()
+        dogApiMock.givenFailure()
 
-            val result = sut.randomImage("pug")
+        val result = sut.randomImage("pug")
 
-            result.shouldBeFailure()
-        }
+        result.shouldBeFailure()
     }
 
     @Test
     fun `listSubBreeds returns success with sub-breed list`() = test {
-        runTest {
-            dogApiMock.givenSuccess()
+        dogApiMock.givenSuccess()
 
-            val result = sut.listSubBreeds("hound")
+        val result = sut.listSubBreeds("hound")
 
-            result.shouldBeSuccess()
-            val subBreeds = result.getOrNull().shouldNotBeNull()
-            subBreeds.shouldNotBeEmpty()
-            subBreeds.first() shouldBe "subBreed1"
-        }
+        result.shouldBeSuccess()
+        val subBreeds = result.getOrNull().shouldNotBeNull()
+        subBreeds.shouldNotBeEmpty()
+        subBreeds.first() shouldBe "subBreed1"
     }
 
     @Test
     fun `listSubBreeds returns failure on server error`() = test {
-        runTest {
-            dogApiMock.givenFailure()
+        dogApiMock.givenFailure()
 
-            val result = sut.listSubBreeds("hound")
+        val result = sut.listSubBreeds("hound")
 
-            result.shouldBeFailure()
-        }
+        result.shouldBeFailure()
     }
 
     @Test
     fun `subBreedImages returns success with image list`() = test {
-        runTest {
-            dogApiMock.givenSuccess()
+        dogApiMock.givenSuccess()
 
-            val result = sut.subBreedImages("hound", "afghan")
+        val result = sut.subBreedImages("hound", "afghan")
 
-            result.shouldBeSuccess()
-            result.getOrNull().shouldNotBeNull().shouldNotBeEmpty()
-        }
+        result.shouldBeSuccess()
+        result.getOrNull().shouldNotBeNull().shouldNotBeEmpty()
     }
 
     @Test
     fun `subBreedImages returns failure on server error`() = test {
-        runTest {
-            dogApiMock.givenFailure()
+        dogApiMock.givenFailure()
 
-            val result = sut.subBreedImages("hound", "afghan")
+        val result = sut.subBreedImages("hound", "afghan")
 
-            result.shouldBeFailure()
-        }
+        result.shouldBeFailure()
     }
 
     @Test
     fun `server error returns HttpError with status code`() = test {
-        runTest {
-            dogApiMock.givenFailure()
+        dogApiMock.givenFailure()
 
-            val results = sut.breeds()
+        val results = sut.breeds()
 
-            results.shouldBeFailure()
-            val error = results.exceptionOrNull()
-            error.shouldBeInstanceOf<DogApiError.HttpError>()
-            error.statusCode shouldBe HTTP_INTERNAL_SERVER_ERROR
-        }
+        results.shouldBeFailure()
+        val error = results.exceptionOrNull()
+        error.shouldBeInstanceOf<DogApiError.HttpError>()
+        error.statusCode shouldBe HTTP_INTERNAL_SERVER_ERROR
     }
 
     @Test
@@ -243,13 +213,11 @@ class DogApiTest {
 
     @Test
     fun `server error is logged at error level`() = test {
-        runTest {
-            dogApiMock.givenFailure()
+        dogApiMock.givenFailure()
 
-            sut.breeds()
+        sut.breeds()
 
-            assertTrue(logger.errorMessages.isNotEmpty(), "Server error should be logged at error level")
-        }
+        assertTrue(logger.errorMessages.isNotEmpty(), "Server error should be logged at error level")
     }
 
     @Test
@@ -265,24 +233,76 @@ class DogApiTest {
         }
     }
 
+    @Test
+    fun `network timeout returns NetworkError`() = runTest {
+        val client = httpClient(
+            MockEngine { _ ->
+                throw ConnectTimeoutException("Connection timed out")
+            }
+        )
+        val api = DogApi(client)
 
-    private fun test(block: TestScope.() -> Unit) {
-        TestScope().block()
+        val result = api.breeds()
+
+        result.shouldBeFailure()
+        result.exceptionOrNull().shouldBeInstanceOf<DogApiError.NetworkError>()
     }
 
-    private class TestScope {
+    @Test
+    fun `malformed json returns SerializationError`() = runTest {
+        val client = httpClient(
+            MockEngine { _ ->
+                respond(
+                    content = "{ not valid json",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+            }
+        )
+        val api = DogApi(client)
+
+        val result = api.breeds()
+
+        result.shouldBeFailure()
+        result.exceptionOrNull().shouldBeInstanceOf<DogApiError.SerializationError>()
+    }
+
+    @Test
+    fun `unexpected exception returns UnknownError`() = runTest {
+        val client = httpClient(
+            MockEngine { _ ->
+                throw IllegalStateException("Unexpected test failure")
+            }
+        )
+        val api = DogApi(client)
+
+        val result = api.breeds()
+
+        result.shouldBeFailure()
+        result.exceptionOrNull().shouldBeInstanceOf<DogApiError.UnknownError>()
+    }
+
+    private fun test(block: suspend ApiTestScope.() -> Unit) = runTest { ApiTestScope().block() }
+
+    private class ApiTestScope {
         val dogApiMock = DogApiMock()
         val logger = CapturingLogger()
-        val httpClient = HttpClient(
-            engine = dogApiMock.engine
-        ) {
+        val httpClient = httpClient(dogApiMock.engine)
+        val sut: DogApiClient = DogApi(httpClient, logger = logger)
+    }
+
+    companion object {
+        private const val INVALID_BREED = "invalidbreed"
+        private const val HTTP_INTERNAL_SERVER_ERROR = 500
+
+        fun httpClient(engine: MockEngine): HttpClient = HttpClient(engine) {
             expectSuccess = true  // Make Ktor throw exceptions for non-2xx responses
             install(ContentNegotiation) {
                 json(DogJson)
             }
         }
-        val sut: DogApiClient = DogApi(httpClient, logger = logger)
     }
+
 }
 
 private class CapturingLogger : DogApiLogger {
