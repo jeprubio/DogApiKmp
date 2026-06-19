@@ -7,6 +7,7 @@ import com.rumosoft.librarydogapi.models.DogApiStatusResult
 import com.rumosoft.librarydogapi.models.RandomImageResult
 import com.rumosoft.librarydogapi.models.SubBreedsResult
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.ClientRequestException
@@ -15,7 +16,6 @@ import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
 import io.ktor.serialization.JsonConvertException
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.SerializationException
@@ -154,7 +154,7 @@ public class DogApi(
     private suspend inline fun <reified T> getAndLog(url: String): T {
         val response: HttpResponse = client.get(url)
         logger.d("GET $url → ${response.status.value}")
-        val element = DogJson.parseToJsonElement(response.bodyAsText())
+        val element = response.body<JsonElement>()
         validateStatus(element)
         return DogJson.decodeFromJsonElement<T>(element)
     }
