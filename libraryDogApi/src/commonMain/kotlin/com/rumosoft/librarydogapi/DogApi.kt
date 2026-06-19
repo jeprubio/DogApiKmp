@@ -19,8 +19,10 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.serialization.JsonConvertException
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.decodeFromJsonElement
 
 /**
  * Default implementation of the Dog API client.
@@ -152,13 +154,13 @@ public class DogApi(
     private suspend inline fun <reified T> getAndLog(url: String): T {
         val response: HttpResponse = client.get(url)
         logger.d("GET $url → ${response.status.value}")
-        val body = response.bodyAsText()
-        validateStatus(body)
-        return DogJson.decodeFromString<T>(body)
+        val element = DogJson.parseToJsonElement(response.bodyAsText())
+        validateStatus(element)
+        return DogJson.decodeFromJsonElement<T>(element)
     }
 
-    private fun validateStatus(body: String) {
-        val statusResult = DogJson.decodeFromString<DogApiStatusResult>(body)
+    private fun validateStatus(element: JsonElement) {
+        val statusResult = DogJson.decodeFromJsonElement<DogApiStatusResult>(element)
         if (statusResult.status == "success") return
 
         val apiMessage = (statusResult.message as? JsonPrimitive)?.contentOrNull
