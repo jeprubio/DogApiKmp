@@ -85,6 +85,15 @@ class BreedNameValidatorTest {
     }
 
     @Test
+    fun `breed name with non-ASCII letters returns InvalidBreedError`() {
+        val result = BreedNameValidator.validate("pügs")
+
+        result.shouldNotBeNull()
+        result.shouldBeInstanceOf<DogApiError.InvalidBreedError>()
+        assertTrue { result.message!!.contains("can only contain") }
+    }
+
+    @Test
     fun `validation error for sub-breed includes correct type in message`() {
         val result = BreedNameValidator.validate("", "sub-breed")
 

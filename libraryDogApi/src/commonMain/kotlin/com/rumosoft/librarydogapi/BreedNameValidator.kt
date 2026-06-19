@@ -19,9 +19,13 @@ internal object BreedNameValidator {
                 DogApiError.InvalidBreedError(name, "The $type name cannot be blank")
             name.any { it.isWhitespace() } ->
                 DogApiError.InvalidBreedError(name, "The $type name cannot contain spaces")
-            !name.all { it.isLetterOrDigit() || it == '-' } ->
+            !name.all { it.isAsciiAllowed() } ->
                 DogApiError.InvalidBreedError(name, "The $type name can only contain letters, numbers, and hyphens")
             else -> null
         }
     }
+
+    /** Dog CEO breed slugs are ASCII-only, so non-ASCII letters/digits are rejected. */
+    private fun Char.isAsciiAllowed(): Boolean =
+        this in 'a'..'z' || this in 'A'..'Z' || this in '0'..'9' || this == '-'
 }
