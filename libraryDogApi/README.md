@@ -21,6 +21,10 @@ dependencies {
 }
 ```
 
+> The published version is defined by `libraryDogApi` in
+> `gradle/libs.versions.toml`, which is the source of truth. Use the value from
+> the latest release rather than assuming the snippet above is current.
+
 ### Swift Package Manager (iOS)
 
 The library is published via SPM through kmmbridge. Check your SPM configuration.
@@ -339,6 +343,7 @@ val mockEngine = MockEngine { request ->
 }
 
 val httpClient = HttpClient(mockEngine) {
+    expectSuccess = true
     install(ContentNegotiation) {
         json()
     }
