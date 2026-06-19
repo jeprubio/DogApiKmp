@@ -318,6 +318,26 @@ class DogApiTest {
         result.exceptionOrNull().shouldBeInstanceOf<DogApiError.UnknownError>()
     }
 
+    @Test
+    fun `trailing slash in base URL does not produce a double slash`() = runTest {
+        var requestedUrl: String? = null
+        val client = httpClient(
+            MockEngine { request ->
+                requestedUrl = request.url.toString()
+                respond(
+                    content = """{"message":{},"status":"success"}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+            }
+        )
+        val api = DogApi(client, baseUrl = "https://example.com/api/")
+
+        api.breeds()
+
+        requestedUrl shouldBe "https://example.com/api/breeds/list/all"
+    }
+
     private fun test(block: suspend ApiTestScope.() -> Unit) = runTest { ApiTestScope().block() }
 
     private fun apiReturningApiError(): DogApiClient {

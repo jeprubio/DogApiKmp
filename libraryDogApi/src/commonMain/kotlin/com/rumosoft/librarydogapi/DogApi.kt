@@ -51,9 +51,12 @@ import kotlinx.serialization.json.decodeFromJsonElement
  */
 public class DogApi(
     private val client: HttpClient,
-    private val baseUrl: String = DEFAULT_BASE_URL,
+    baseUrl: String = DEFAULT_BASE_URL,
     private val logger: DogApiLogger = NoOpDogApiLogger,
 ) : DogApiClient {
+
+    /** Base URL with any trailing slashes removed so path concatenation never doubles up. */
+    private val baseUrl: String = baseUrl.trimEnd('/')
 
     public companion object {
         public const val DEFAULT_BASE_URL: String = "https://dog.ceo/api"
