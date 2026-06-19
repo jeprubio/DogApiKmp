@@ -11,6 +11,7 @@ import io.ktor.client.call.body
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -67,6 +68,13 @@ public class DogApi(
         public const val DEFAULT_SOCKET_TIMEOUT_MS: Long  = 15_000L
 
         /**
+         * Number of retries applied by the shared client to transient failures
+         * (I/O exceptions and 5xx server errors). All operations are idempotent
+         * GET requests, so retrying is safe. 4xx responses are never retried.
+         */
+        public const val DEFAULT_MAX_RETRIES: Int = 2
+
+        /**
          * Shared HttpClient instance used by createDefault().
          * This client is reused across all default DogApi instances for efficiency.
          */
@@ -80,6 +88,10 @@ public class DogApi(
                     connectTimeoutMillis = DEFAULT_CONNECT_TIMEOUT_MS
                     requestTimeoutMillis = DEFAULT_REQUEST_TIMEOUT_MS
                     socketTimeoutMillis  = DEFAULT_SOCKET_TIMEOUT_MS
+                }
+                install(HttpRequestRetry) {
+                    retryOnExceptionOrServerErrors(maxRetries = DEFAULT_MAX_RETRIES)
+                    exponentialDelay()
                 }
             }
         }

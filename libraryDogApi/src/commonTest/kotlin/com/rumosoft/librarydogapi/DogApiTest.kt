@@ -11,6 +11,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -316,6 +317,44 @@ class DogApiTest {
 
         result.shouldBeFailure()
         result.exceptionOrNull().shouldBeInstanceOf<DogApiError.UnknownError>()
+    }
+
+    @Test
+    fun `transient server error is retried then succeeds`() = runTest {
+        var attempts = 0
+        val client = HttpClient(
+            MockEngine { _ ->
+                attempts++
+                if (attempts < 2) {
+                    respond(
+                        content = "",
+                        status = HttpStatusCode.InternalServerError,
+                        headers = headersOf(HttpHeaders.ContentType, "application/json")
+                    )
+                } else {
+                    respond(
+                        content = """{"message":{"breed":["sub"]},"status":"success"}""",
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentType, "application/json")
+                    )
+                }
+            }
+        ) {
+            expectSuccess = true
+            install(ContentNegotiation) {
+                json(DogJson)
+            }
+            install(HttpRequestRetry) {
+                retryOnServerErrors(maxRetries = 2)
+                delayMillis { 0L }
+            }
+        }
+        val api = DogApi(client)
+
+        val result = api.breeds()
+
+        result.shouldBeSuccess()
+        attempts shouldBe 2
     }
 
     @Test
