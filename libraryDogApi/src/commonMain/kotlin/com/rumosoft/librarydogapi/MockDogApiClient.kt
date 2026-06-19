@@ -15,10 +15,17 @@ import com.rumosoft.librarydogapi.models.Breed
  * )
  * // Use mockApi in your tests
  * ```
+ *
+ * The two `randomImage` overloads can be configured independently:
+ * [randomImageResult] backs the no-argument [randomImage], while
+ * [randomImageForBreedResult] backs the breed-specific [randomImage]. When
+ * [randomImageForBreedResult] is not provided, the breed-specific overload falls
+ * back to [randomImageResult].
  */
 public class MockDogApiClient(
     private val breedsResult: Result<List<Breed>>? = null,
     private val randomImageResult: Result<String>? = null,
+    private val randomImageForBreedResult: Result<String>? = null,
     private val breedImagesResult: Result<List<String>>? = null,
     private val subBreedImagesResult: Result<List<String>>? = null,
     private val listSubBreedsResult: Result<List<String>>? = null
@@ -37,7 +44,7 @@ public class MockDogApiClient(
     }
 
     override suspend fun randomImage(breed: String): Result<String> {
-        return randomImageResult ?: Result.failure(
+        return randomImageForBreedResult ?: randomImageResult ?: Result.failure(
             DogApiError.UnknownError("Mock not configured for randomImage(breed)")
         )
     }
