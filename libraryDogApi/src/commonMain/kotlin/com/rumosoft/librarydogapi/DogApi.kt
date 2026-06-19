@@ -16,6 +16,7 @@ import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.statement.HttpResponse
+import io.ktor.http.encodeURLPathPart
 import io.ktor.serialization.JsonConvertException
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.SerializationException
@@ -113,7 +114,7 @@ public class DogApi(
         BreedNameValidator.validate(breed)?.let { return Result.failure(it) }
         return safeApiCall(breedName = breed, logger = logger) {
             logger.d("Fetching random image for breed '$breed'")
-            val url = "$baseUrl/breed/${breed.lowercase()}/images/random"
+            val url = "$baseUrl/breed/${breed.toPathSegment()}/images/random"
             getAndLog<RandomImageResult>(url).message
         }
     }
@@ -122,7 +123,7 @@ public class DogApi(
         BreedNameValidator.validate(breed)?.let { return Result.failure(it) }
         return safeApiCall(breedName = breed, logger = logger) {
             logger.d("Fetching all images for breed '$breed'")
-            val url = "$baseUrl/breed/${breed.lowercase()}/images"
+            val url = "$baseUrl/breed/${breed.toPathSegment()}/images"
             getAndLog<BreedImagesResult>(url).message
         }
     }
@@ -134,7 +135,7 @@ public class DogApi(
 
         return safeApiCall(breedName = breed, logger = logger) {
             logger.d("Fetching images for sub-breed '$breed/$subBreed'")
-            val url = "$baseUrl/breed/${breed.lowercase()}/${subBreed.lowercase()}/images"
+            val url = "$baseUrl/breed/${breed.toPathSegment()}/${subBreed.toPathSegment()}/images"
             getAndLog<BreedImagesResult>(url).message
         }
     }
@@ -143,10 +144,17 @@ public class DogApi(
         BreedNameValidator.validate(breed)?.let { return Result.failure(it) }
         return safeApiCall(breedName = breed, logger = logger) {
             logger.d("Fetching sub-breeds for '$breed'")
-            val url = "$baseUrl/breed/${breed.lowercase()}/list"
+            val url = "$baseUrl/breed/${breed.toPathSegment()}/list"
             getAndLog<SubBreedsResult>(url).message
         }
     }
+
+    /**
+     * Normalises a breed or sub-breed name into a safe URL path segment:
+     * lower-cased and percent-encoded. Encoding is applied explicitly here so URL
+     * safety does not rely on [BreedNameValidator]'s character rules.
+     */
+    private fun String.toPathSegment(): String = lowercase().encodeURLPathPart()
 
     /**
      * Helper to make HTTP GET request, log the request/response, and parse the body.
