@@ -12,29 +12,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
 
-class MainScreen(private val modifier: Modifier = Modifier) : Screen {
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    override fun Content() {
-        val navigator = LocalNavigator.current
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Text(text = "Dog Api")
-                    },
-                )
-            },
-            modifier = modifier
-        ) { paddingValues ->
-            MainScreenContent(
-                padding = paddingValues,
-                onNewScreenSelected = { navigator?.push(it) }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainScreen(
+    onNavigate: (AppRoute) -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = "Dog Api") },
             )
-        }
+        },
+        modifier = modifier
+    ) { paddingValues ->
+        MainScreenContent(
+            padding = paddingValues,
+            onNewScreenSelected = onNavigate
+        )
     }
 }
 
@@ -42,7 +38,7 @@ class MainScreen(private val modifier: Modifier = Modifier) : Screen {
 internal fun MainScreenContent(
     padding: PaddingValues = PaddingValues(),
     modifier: Modifier = Modifier,
-    onNewScreenSelected: (Screen) -> Unit = {}
+    onNewScreenSelected: (AppRoute) -> Unit = {}
 ) {
     LazyColumn(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -51,22 +47,22 @@ internal fun MainScreenContent(
         modifier = modifier.fillMaxSize().padding(padding)
     ) {
         item {
-            Button(onClick = { onNewScreenSelected(ListAllBreedsScreen()) }) {
+            Button(onClick = { onNewScreenSelected(ListAllBreedsRoute) }) {
                 Text(text = "List All Breeds")
             }
         }
         item {
-            Button(onClick = { onNewScreenSelected(RandomImageScreen()) }) {
+            Button(onClick = { onNewScreenSelected(RandomImageRoute) }) {
                 Text(text = "Random Image")
             }
         }
         item {
-            Button(onClick = { onNewScreenSelected(BreedImagesScreen()) }) {
+            Button(onClick = { onNewScreenSelected(BreedImagesRoute) }) {
                 Text(text = "Breed Images")
             }
         }
         item {
-            Button(onClick = { onNewScreenSelected(ListSubBreedsScreen()) }) {
+            Button(onClick = { onNewScreenSelected(ListSubBreedsRoute) }) {
                 Text(text = "List Sub Breeds")
             }
         }

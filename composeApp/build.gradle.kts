@@ -1,10 +1,9 @@
-import org.jetbrains.compose.ExperimentalComposeLibrary
-
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKmpLibrary)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.serialization)
 }
 
 kotlin {
@@ -42,8 +41,7 @@ kotlin {
             implementation(libs.compose.resources)
             implementation(libs.napier)
             implementation(libs.kotlinx.coroutines.core)
-            implementation(libs.voyager.navigator)
-            implementation(libs.voyager.transitions)
+            implementation(libs.navigation3.ui)
         }
 
         // Adds common test dependencies

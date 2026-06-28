@@ -12,9 +12,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import dogapikmp.composeapp.generated.resources.Res
-import dogapikmp.composeapp.generated.resources.ic_arrow_back
-import org.jetbrains.compose.resources.painterResource
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,64 +20,63 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
 import com.rumosoft.librarydogapi.DogApiClient
+import dogapikmp.composeapp.generated.resources.Res
+import dogapikmp.composeapp.generated.resources.ic_arrow_back
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.painterResource
 
-class ListAllBreedsScreen(
-    private val dogApi: DogApiClient = createDogApiWithLogging(),
-    val modifier: Modifier = Modifier
-) : Screen {
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    override fun Content() {
-        val navigator = LocalNavigator.current
-        val scope = rememberCoroutineScope()
-        var text by remember { mutableStateOf("Loading") }
-        LaunchedEffect(true) {
-            scope.launch {
-                dogApi.breeds()
-                    .onSuccess { breeds ->
-                        Napier.d("JEP - result: $breeds")
-                        text = breeds.joinToString("\n") { breed ->
-                            if (breed.subBreeds.isEmpty()) {
-                                breed.name
-                            } else {
-                                "${breed.name}: ${breed.subBreeds}"
-                            }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ListAllBreedsScreen(
+    onBack: () -> Unit = {},
+    dogApi: DogApiClient = createDogApiWithLogging(),
+    modifier: Modifier = Modifier
+) {
+    val scope = rememberCoroutineScope()
+    var text by remember { mutableStateOf("Loading") }
+    LaunchedEffect(true) {
+        scope.launch {
+            dogApi.breeds()
+                .onSuccess { breeds ->
+                    Napier.d("JEP - result: $breeds")
+                    text = breeds.joinToString("\n") { breed ->
+                        if (breed.subBreeds.isEmpty()) {
+                            breed.name
+                        } else {
+                            "${breed.name}: ${breed.subBreeds}"
                         }
                     }
-                    .onFailure { error ->
-                        text = error.message ?: "error"
-                    }
-            }
+                }
+                .onFailure { error ->
+                    text = error.message ?: "error"
+                }
         }
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("List All Breeds") },
-                    navigationIcon = {
-                        IconButton(onClick = { navigator?.pop() }) {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_arrow_back),
-                                contentDescription = "Back"
-                            )
-                        }
-                    },
-                    modifier = Modifier.statusBarsPadding(),
-                )
-            },
-            modifier = modifier,
-        ) { padding ->
-            LazyColumn(modifier = Modifier.padding(top = padding.calculateTopPadding()).padding(horizontal = 16.dp)) {
-                item {
-                    Text(text = text)
-                }
-                item {
-                    Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
-                }
+    }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("List All Breeds") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_arrow_back),
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                modifier = Modifier.statusBarsPadding(),
+            )
+        },
+        modifier = modifier,
+    ) { padding ->
+        LazyColumn(modifier = Modifier.padding(top = padding.calculateTopPadding()).padding(horizontal = 16.dp)) {
+            item {
+                Text(text = text)
+            }
+            item {
+                Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
             }
         }
     }
