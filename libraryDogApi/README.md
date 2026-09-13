@@ -310,6 +310,9 @@ Custom error types for better error handling:
 
 ## Testing
 
+This section covers testing *your* code against this library. To run the library's own test
+suite, see [Running the Tests](../README.md#running-the-tests) in the root README.
+
 ### Unit Testing
 
 ```kotlin

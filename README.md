@@ -35,6 +35,61 @@ A production-ready Kotlin Multiplatform library for accessing the Dog CEO API.
 2. Select a simulator or device
 3. Run the project
 
+### Running the Tests
+
+Tests live in the `commonTest` source sets of the two Kotlin Multiplatform modules and use
+`kotlin.test` with Kotest assertions. Run everything from the project root:
+
+```bash
+./gradlew allTests
+```
+
+Or one module at a time:
+
+| Command | What it runs |
+| --- | --- |
+| `./gradlew :libraryDogApi:allTests` | Library tests: `DogApiTest`, `BreedNameValidatorTest` |
+| `./gradlew :composeApp:allTests` | Compose UI tests: `MainScreenTest`, `BreedInputTest` |
+
+While iterating, narrow the run to a single class or test:
+
+```bash
+# One class
+./gradlew :libraryDogApi:iosSimulatorArm64Test \
+    --tests "com.rumosoft.librarydogapi.DogApiTest"
+
+# One test, or a group of tests by prefix
+./gradlew :libraryDogApi:iosSimulatorArm64Test \
+    --tests "com.rumosoft.librarydogapi.DogApiTest.cancellation*"
+```
+
+Results are written to `<module>/build/reports/tests/allTests/index.html`, with the raw XML in
+`<module>/build/test-results/`.
+
+#### Two things to know before you trust a green build
+
+**The tests currently run on iOS only.** `allTests` resolves to `iosSimulatorArm64Test` and
+nothing else, because neither module enables Android host tests. Gradle reports this on every
+invocation:
+
+```
+WARNING: The 'commonTest' source directory exists, but android host tests are not enabled.
+To enable android host tests, add `withHostTest {}` to your android target configuration
+in the Gradle build file.
+```
+
+The consequence is that the shared tests never exercise the Android OkHttp engine. Adding
+`withHostTest {}` to each module's `android { }` block would run the same suite on the JVM as
+well. Running `iosSimulatorArm64Test` requires macOS with Xcode installed; the `iosArm64`
+target can only be compiled and linked, never executed on the host.
+
+**A `--tests` filter that matches nothing passes silently.** Kotlin/Native test tasks do not
+fail on an empty selection, so a typo in the filter reports `BUILD SUCCESSFUL` after running
+zero tests. Check the test count in the report before concluding that a change is covered.
+
+`./gradlew :androidApp:testDebugUnitTest` exists but reports `NO-SOURCE`, because `androidApp`
+has no unit tests; its `androidTest` directory contains only a template instrumented test.
+
 ## 📦 Using the Library
 
 ### In Your Kotlin Project
