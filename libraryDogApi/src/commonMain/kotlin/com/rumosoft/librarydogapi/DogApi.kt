@@ -20,6 +20,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.http.encodeURLPathPart
 import io.ktor.serialization.JsonConvertException
 import io.ktor.serialization.kotlinx.json.json
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
@@ -194,7 +195,13 @@ public class DogApi(
 
 /**
  * Wraps API calls with error handling, converting exceptions to typed [DogApiError] instances.
- * Returns only [Result.success] or [Result.failure], never throws.
+ * Returns [Result.success] or [Result.failure] for every outcome the API can produce.
+ *
+ * [CancellationException] is deliberately rethrown rather than mapped: cancellation is not an
+ * API failure, and swallowing it would break structured concurrency. The calling coroutine
+ * would keep running after being cancelled, and on iOS a cancelled Swift `Task` would receive
+ * a failed [Result] instead of surfacing cancellation. It is also not logged, since nothing
+ * went wrong.
  *
  * @param breedName When non-null, 404 responses are mapped to [DogApiError.InvalidBreedError]
  *   and logged at debug level; all other errors are logged at error level.
@@ -204,16 +211,19 @@ private suspend inline fun <T> safeApiCall(
     logger: DogApiLogger = NoOpDogApiLogger,
     block: suspend () -> T,
 ): Result<T> =
-    runCatching { block() }
-        .recoverCatching { exception ->
-            val error = exception.toDogApiError(breedName)
-            if (error is DogApiError.InvalidBreedError) {
-                logger.d(error.message ?: "Unknown error")
-            } else {
-                logger.e(error.message ?: "Unknown error", exception)
-            }
-            throw error
+    try {
+        Result.success(block())
+    } catch (cancellation: CancellationException) {
+        throw cancellation
+    } catch (throwable: Throwable) {
+        val error = throwable.toDogApiError(breedName)
+        if (error is DogApiError.InvalidBreedError) {
+            logger.d(error.message ?: "Unknown error")
+        } else {
+            logger.e(error.message ?: "Unknown error", throwable)
         }
+        Result.failure(error)
+    }
 
 /**
  * Maps a [Throwable] to a typed [DogApiError].

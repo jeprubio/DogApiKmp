@@ -17,7 +17,10 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.test.Test
 
@@ -320,6 +323,47 @@ class DogApiTest {
     }
 
     @Test
+    fun `cancellation propagates instead of returning a failed Result`() = runTest {
+        val requestStarted = CompletableDeferred<Unit>()
+        val api = DogApi(neverRespondingClient(requestStarted))
+        var reachedCodeAfterCall = false
+
+        val job = launch {
+            api.breeds()
+            // Only reachable if breeds() returned normally instead of rethrowing
+            // CancellationException, which would mean the calling coroutine keeps
+            // running after it was cancelled.
+            reachedCodeAfterCall = true
+        }
+        requestStarted.await()
+        job.cancel()
+        job.join()
+
+        assertFalse(
+            reachedCodeAfterCall,
+            "breeds() must rethrow CancellationException, not map it to a failed Result",
+        )
+    }
+
+    @Test
+    fun `cancellation is not logged as an error`() = runTest {
+        val requestStarted = CompletableDeferred<Unit>()
+        val logger = CapturingLogger()
+        val api = DogApi(neverRespondingClient(requestStarted), logger = logger)
+
+        val job = launch { api.breeds() }
+        requestStarted.await()
+        job.cancel()
+        job.join()
+
+        assertTrue(
+            logger.errorMessages.isEmpty(),
+            "Cancellation is not a failure and must not be logged at error level, " +
+                "but was logged as: ${logger.errorMessages}",
+        )
+    }
+
+    @Test
     fun `transient server error is retried then succeeds`() = runTest {
         var attempts = 0
         val client = HttpClient(
@@ -378,6 +422,23 @@ class DogApiTest {
     }
 
     private fun test(block: suspend ApiTestScope.() -> Unit) = runTest { ApiTestScope().block() }
+
+    /**
+     * A client whose engine accepts the request and then never responds, so the only way the
+     * call can finish is by being cancelled.
+     */
+    private fun neverRespondingClient(requestStarted: CompletableDeferred<Unit>): HttpClient =
+        httpClient(
+            MockEngine { _ ->
+                requestStarted.complete(Unit)
+                CompletableDeferred<Unit>().await() // never completes; suspends until cancelled
+                respond(
+                    content = """{"message":{},"status":"success"}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+            }
+        )
 
     private fun apiReturningApiError(): DogApiClient {
         val client = httpClient(
