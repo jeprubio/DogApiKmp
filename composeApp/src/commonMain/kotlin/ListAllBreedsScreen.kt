@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.rumosoft.librarydogapi.DogApiClient
+import com.rumosoft.librarydogapi.DogApiError
 import dogapikmp.composeapp.generated.resources.Res
 import dogapikmp.composeapp.generated.resources.ic_arrow_back
 import io.github.aakira.napier.Napier
@@ -38,20 +39,19 @@ fun ListAllBreedsScreen(
     var text by remember { mutableStateOf("Loading") }
     LaunchedEffect(true) {
         scope.launch {
-            dogApi.breeds()
-                .onSuccess { breeds ->
-                    Napier.d("JEP - result: $breeds")
-                    text = breeds.joinToString("\n") { breed ->
-                        if (breed.subBreeds.isEmpty()) {
-                            breed.name
-                        } else {
-                            "${breed.name}: ${breed.subBreeds}"
-                        }
+            text = try {
+                val breeds = dogApi.breeds()
+                Napier.d("JEP - result: $breeds")
+                breeds.joinToString("\n") { breed ->
+                    if (breed.subBreeds.isEmpty()) {
+                        breed.name
+                    } else {
+                        "${breed.name}: ${breed.subBreeds}"
                     }
                 }
-                .onFailure { error ->
-                    text = error.message ?: "error"
-                }
+            } catch (error: DogApiError) {
+                error.message ?: "error"
+            }
         }
     }
     Scaffold(

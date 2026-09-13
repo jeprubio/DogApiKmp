@@ -5,10 +5,10 @@ A Kotlin Multiplatform library providing easy access to the [Dog CEO API](https:
 ## Features
 
 ✅ **Multiplatform** - Works on Android, iOS, and other Kotlin platforms  
-✅ **Type-safe** - Strongly typed APIs with proper Result types  
+✅ **Type-safe** - Strongly typed APIs on Kotlin *and* Swift  
 ✅ **Typed Error Handling** - Specific error types (NetworkError, HttpError, etc.) for better error handling  
 ✅ **Testable** - Protocol-based design for easy mocking  
-✅ **iOS-friendly** - Both async/await and callback patterns supported  
+✅ **iOS-friendly** - Native Swift `async throws` with typed results, plus callback patterns  
 ✅ **Well-documented** - Comprehensive documentation for all public APIs  
 
 ## Installation
@@ -41,29 +41,38 @@ import com.rumosoft.librarydogapi.DogApi
 // Create API client
 val api = DogApi.createDefault()
 
-// Fetch all breeds
-val breedsResult = api.breeds()
-breedsResult.onSuccess { breeds ->
+// Every call returns its value or throws a DogApiError
+try {
+    val breeds: List<Breed> = api.breeds()
     breeds.forEach { breed ->
         println("${breed.name}: ${breed.subBreeds}")
     }
-}
 
-// Get random image
-val imageResult = api.randomImage()
-imageResult.onSuccess { imageUrl ->
+    val imageUrl: String = api.randomImage()
     println("Random dog image: $imageUrl")
+
+    val huskyImage: String = api.randomImage("husky")
+    val allHuskyImages: List<String> = api.breedImages("husky")
+    val subBreeds: List<String> = api.listSubBreeds("hound")
+} catch (error: DogApiError) {
+    println("Failed: ${error.message}")
 }
-
-// Get breed-specific image
-val huskyImageResult = api.randomImage("husky")
-
-// Get all images for a breed
-val allHuskyImages = api.breedImages("husky")
-
-// List sub-breeds
-val subBreeds = api.listSubBreeds("hound")
 ```
+
+#### Prefer a `Result`?
+
+Wrap the call. The library does not return `kotlin.Result` itself, because `Result` is an inline
+value class that Kotlin/Native erases to `Any?` when exporting to Objective-C, which would strip
+every type from the Swift API:
+
+```kotlin
+val breeds: Result<List<Breed>> = runCatching { api.breeds() }
+breeds.onSuccess { /* … */ }.onFailure { /* … */ }
+```
+
+> **Inside a cancellable coroutine, catch `DogApiError` instead.** `runCatching` also catches
+> `CancellationException`, so using it in a `viewModelScope` or a `LaunchedEffect` swallows
+> cancellation and lets the coroutine continue after it was cancelled.
 
 #### Dependency Injection
 
@@ -73,18 +82,16 @@ For better testability, use the `DogApiClient` interface:
 class BreedRepository(
     private val dogApi: DogApiClient  // Use interface, not concrete class
 ) {
-    suspend fun getBreeds() = dogApi.breeds()
+    suspend fun getBreeds(): List<Breed> = dogApi.breeds()
 }
 
 // In production
 val repository = BreedRepository(DogApi.createDefault())
 
 // In tests
-val repository = BreedRepository(MockDogApiClient(
-    breedsResult = Result.success(listOf(
-        Breed("husky", emptyList())
-    ))
-))
+val repository = BreedRepository(
+    MockDogApiClient(breeds = listOf(Breed("husky", emptyList())))
+)
 ```
 
 #### Custom Base URL (for testing or alternative endpoints)
@@ -129,7 +136,7 @@ Then pass it from Swift:
 ```swift
 import LibraryDogApi
 
-let api = DogApi.Companion().createDefault(logger: OSLogLogger())
+let api = DogApi.companion.createDefault(logger: OSLogLogger())
 ```
 
 **Kotlin Multiplatform app (shared Kotlin code)**
@@ -169,94 +176,121 @@ D/DogApi: GET https://dog.ceo/api/breed/husky/images → 200
 
 #### Using Async/Await (Recommended)
 
-With SKIE enabled, you can use Swift's native async/await:
+With SKIE enabled, every function arrives as native `async throws` with fully typed results —
+`[Breed]`, `String`, `[String]` — not `Any?`:
 
 ```swift
 import LibraryDogApi
 
-let api = DogApi.Companion().createDefault()
+let api: DogApiClient = DogApi.companion.createDefault()
 
 Task {
     do {
-        // Fetch breeds
-        let breedsResult = try await api.breeds()
-        if let breeds = breedsResult.getOrNull() {
-            for breed in breeds {
-                print("\(breed.name): \(breed.subBreeds)")
-            }
+        let breeds: [Breed] = try await api.breeds()
+        for breed in breeds {
+            print("\(breed.name): \(breed.subBreeds)")
         }
-        
-        // Get random image
-        let imageResult = try await api.randomImage()
-        if let imageUrl = imageResult.getOrNull() {
-            print("Random dog: \(imageUrl)")
-        }
-        
-        // Get breed-specific image
-        let huskyResult = try await api.randomImage(breed: "husky")
-        
+
+        let imageUrl: String = try await api.randomImage()
+        print("Random dog: \(imageUrl)")
+
+        let husky: String = try await api.randomImage(breed: "husky")
+        let huskyImages: [String] = try await api.breedImages(breed: "husky")
+        let subBreeds: [String] = try await api.listSubBreeds(breed: "hound")
+        let afghan: [String] = try await api.subBreedImages(breed: "hound", subBreed: "afghan")
+    } catch let error as DogApiError {
+        print("Dog API failed: \(error.message ?? "")")
     } catch {
-        print("Error: \(error)")
+        print("Unexpected: \(error)")
     }
 }
+```
+
+Cancelling the enclosing Swift `Task` cancels the request and surfaces as `CancellationError`,
+not as a Dog API failure:
+
+```swift
+let task = Task {
+    do {
+        _ = try await api.breeds()
+    } catch is CancellationError {
+        print("cancelled")
+    } catch {
+        print("failed: \(error)")
+    }
+}
+task.cancel()
 ```
 
 #### Using Completion Handlers (Alternative)
 
-Extension functions provide callback-based APIs. With SKIE enabled, these are exposed as native Swift extensions directly on the `DogApiClient` protocol.
+Extension functions provide callback-based APIs. With SKIE enabled, these are exposed as native
+Swift extensions directly on the `DogApiClient` protocol.
 
-Each function returns a `Job` so you can cancel the request before it completes — for example when a view is dismissed.
+Each callback receives either a value or a `DogApiError`, never both. Each function returns a
+`Job` so you can cancel the request before it completes — for example when a view is dismissed.
+The callback is **not** invoked for a cancelled request.
 
 ```swift
 import LibraryDogApi
 
-let api = DogApi.Companion().createDefault()
+let api = DogApi.companion.createDefault()
 
 // Fetch breeds with callback — store the Job to cancel later
-let breedsJob = api.breeds { [weak self] result in
-    if let breeds = result.getOrNull() {
-        for breed in breeds {
-            print("\(breed.name)")
-        }
+let breedsJob = api.breeds { breeds, error in
+    if let error {
+        print("failed: \(error.message ?? "")")
+        return
+    }
+    for breed in breeds ?? [] {
+        print(breed.name)
     }
 }
 
 // Random image with callback
-let imageJob = api.randomImage { [weak self] result in
-    if let imageUrl = result.getOrNull() {
-        print("Image: \(imageUrl)")
-    }
+let imageJob = api.randomImage { imageUrl, error in
+    print(imageUrl ?? error?.message ?? "")
 }
 
 // Random image for a specific breed with callback
-let huskyJob = api.randomImageForBreed(breed: "husky") { [weak self] result in
-    if let imageUrl = result.getOrNull() {
-        print("Husky image: \(imageUrl)")
-    }
+let huskyJob = api.randomImageForBreed(breed: "husky") { imageUrl, error in
+    print(imageUrl ?? error?.message ?? "")
 }
 
-// Cancel any in-flight request (e.g. in deinit or onDisappear)
-breedsJob.cancel(message: nil)
+// Cancel any in-flight request (e.g. in deinit or onDisappear).
+// The cast is required because `cause` is an optional Kotlin type.
+breedsJob.cancel(cause: nil as KotlinCancellationException?)
 ```
+
+> Prefer `async/await` where you can. It gives you cancellation through the Swift `Task` API and
+> avoids the bridged `Job` type entirely.
 
 #### Protocol-based Dependency Injection
 
 ```swift
-class BreedViewModel {
+final class BreedViewModel {
     private let dogApi: DogApiClient
-    
+
     init(dogApi: DogApiClient) {
         self.dogApi = dogApi
     }
-    
-    func loadBreeds() async {
-        let result = try? await dogApi.breeds()
-        // Handle result
+
+    func loadBreeds() async -> [Breed] {
+        do {
+            return try await dogApi.breeds()
+        } catch {
+            return []
+        }
     }
 }
 
 // In production
-let viewModel = BreedViewModel(dogApi: DogApi.Companion().createDefault())
+let viewModel = BreedViewModel(dogApi: DogApi.companion.createDefault())
+
+// In tests
+let viewModel = BreedViewModel(
+    dogApi: MockDogApiClient(breeds: [Breed(name: "husky", subBreeds: ["siberian"])])
+)
 ```
 
 #### Logging
@@ -269,14 +303,15 @@ See the [Logging](#logging) section under *Android / Kotlin* above — the iOS-o
 
 The main interface for accessing the Dog API:
 
-- `breeds()` - Get all breeds with their sub-breeds
-- `randomImage()` - Get a random dog image URL
-- `randomImage(breed: String)` - Get a random image for a specific breed
-- `breedImages(breed: String)` - Get all images for a breed
-- `subBreedImages(breed: String, subBreed: String)` - Get all images for a sub-breed
-- `listSubBreeds(breed: String)` - Get all sub-breeds for a breed
+- `breeds(): List<Breed>` - Get all breeds with their sub-breeds
+- `randomImage(): String` - Get a random dog image URL
+- `randomImage(breed: String): String` - Get a random image for a specific breed
+- `breedImages(breed: String): List<String>` - Get all images for a breed
+- `subBreedImages(breed: String, subBreed: String): List<String>` - Get all images for a sub-breed
+- `listSubBreeds(breed: String): List<String>` - Get all sub-breeds for a breed
 
-All methods return `Result<T>` for safe error handling.
+Every method returns its value or throws a [`DogApiError`](#dogapierror). Kotlin callers who want
+a `Result` wrap the call in `runCatching { }`; Swift callers get `async throws` and `catch`.
 
 ### DogApiLogger
 
@@ -289,11 +324,32 @@ The default implementation is `NoOpDogApiLogger`, which silently discards all ou
 
 ### MockDogApiClient
 
+A `DogApiClient` implementation for tests. Each endpoint is stubbed by a pair of parameters: the
+value to return, or the `DogApiError` to throw. The error wins when both are given, and an
+endpoint with neither throws `UnknownError` naming the endpoint, so an unconfigured call fails
+loudly rather than returning something misleading.
 
 ```kotlin
 val mockApi = MockDogApiClient(
-    breedsResult = Result.success(listOf(Breed("husky", emptyList()))),
-    randomImageResult = Result.success("https://example.com/dog.jpg")
+    breeds = listOf(Breed("husky", emptyList())),
+    randomImage = "https://example.com/dog.jpg",
+)
+
+val failing = MockDogApiClient(
+    breedsError = DogApiError.NetworkError("offline"),
+)
+```
+
+The two `randomImage` overloads are configured independently: `randomImage` backs the
+no-argument overload and `randomImageForBreed` backs the breed-specific one, which falls back to
+`randomImage` when `randomImageForBreed` is not supplied.
+
+From Swift the same parameters are fully typed, and unspecified ones can be omitted:
+
+```swift
+let mockApi = MockDogApiClient(
+    breeds: [Breed(name: "husky", subBreeds: [])],
+    randomImage: "https://example.com/dog.jpg"
 )
 ```
 
@@ -320,14 +376,21 @@ class DogApiTest {
     @Test
     fun testBreedsSuccess() = runTest {
         val mockApi = MockDogApiClient(
-            breedsResult = Result.success(listOf(
-                Breed("husky", listOf("siberian"))
-            ))
+            breeds = listOf(Breed("husky", listOf("siberian")))
         )
-        
-        val result = mockApi.breeds()
-        assertTrue(result.isSuccess)
-        assertEquals("husky", result.getOrNull()?.first()?.name)
+
+        val breeds = mockApi.breeds()
+
+        assertEquals("husky", breeds.first().name)
+    }
+
+    @Test
+    fun testBreedsFailure() = runTest {
+        val mockApi = MockDogApiClient(
+            breedsError = DogApiError.NetworkError("offline")
+        )
+
+        assertFailsWith<DogApiError.NetworkError> { mockApi.breeds() }
     }
 }
 ```
@@ -357,8 +420,11 @@ val api = DogApi(httpClient)
 
 ## Architecture
 - **Interface-first design**: `DogApiClient` interface makes testing easy
-- **Result-based error handling**: All methods return `Result<T>`
-- **Typed errors**: Uses `DogApiError` sealed class for specific, type-safe error handling
+- **Exception-based error handling**: methods return their value or throw, which maps cleanly to
+  Swift `throws`. `kotlin.Result` is deliberately avoided because Kotlin/Native erases inline
+  value classes to `Any?` in the Objective-C export
+- **Typed errors**: Uses `DogApiError` sealed class for specific, type-safe error handling, and
+  SKIE turns it into an exhaustively switchable Swift enum via `onEnum(of:)`
 - **Dependency injection friendly**: Constructor injection supported
 - **Platform-specific extensions**: iOS callbacks in addition to suspend functions
 - **Efficient resource management**: Uses a shared HttpClient for optimal performance
@@ -380,36 +446,48 @@ class BreedViewModel(private val api: DogApi)
 #### Kotlin/Android
 
 ```kotlin
-val result = api.breeds()
-result.onSuccess { breeds ->
+try {
+    val breeds = api.breeds()
     // Handle success
-}.onFailure { error ->
+} catch (error: DogApiError) {
     when (error) {
-        is DogApiError.NetworkError -> // Handle network issues
-        is DogApiError.HttpError -> // Handle HTTP errors (status code available)
-        is DogApiError.RemoteApiError -> // Handle Dog CEO API-level errors
-        is DogApiError.SerializationError -> // Handle parsing errors
-        else -> // Handle other errors
+        is DogApiError.NetworkError -> {} // Handle network issues
+        is DogApiError.HttpError -> {} // Handle HTTP errors (error.statusCode available)
+        is DogApiError.RemoteApiError -> {} // Handle Dog CEO API-level errors
+        is DogApiError.SerializationError -> {} // Handle parsing errors
+        is DogApiError.InvalidBreedError -> {} // Handle a bad breed name
+        is DogApiError.UnknownError -> {} // Handle anything else
     }
 }
 ```
 
+Catching `DogApiError` rather than `Throwable` (or using `runCatching`) keeps coroutine
+cancellation propagating, which is what you want inside a `viewModelScope` or `LaunchedEffect`.
+
 #### iOS/Swift
+
+SKIE exposes the sealed `DogApiError` hierarchy through `onEnum(of:)`, which gives an
+exhaustive Swift `switch`. Each case carries the concrete subclass, so its own properties —
+`statusCode`, `breedName`, `status`, `apiMessage` — are available directly:
 
 ```swift
 do {
-    let result = try await api.breeds()
+    let breeds = try await api.breeds()
     // Handle success
 } catch let error as DogApiError {
-    switch error {
-    case .networkError(let message, _):
-        // Show retry or offline mode
-    case .httpError(let statusCode, let message):
-        // Handle HTTP errors
-    case .serializationError(let message, _):
-        // Handle parsing errors
-    default:
-        // Handle other errors
+    switch onEnum(of: error) {
+    case .networkError(let e):
+        print("offline: \(e.message ?? "")")          // show retry or offline mode
+    case .httpError(let e):
+        print("HTTP \(e.statusCode)")                 // status code is typed Int32
+    case .invalidBreedError(let e):
+        print("no such breed: \(e.breedName)")
+    case .remoteApiError(let e):
+        print("\(e.status): \(e.apiMessage ?? "")")
+    case .serializationError(let e):
+        print("parse failure: \(e.message ?? "")")
+    case .unknownError(let e):
+        print("unknown: \(e.message ?? "")")
     }
 }
 ```
@@ -417,9 +495,7 @@ do {
 ### 3. Use Mocks in Tests
 
 ```kotlin
-val mockApi = MockDogApiClient(
-    breedsResult = Result.success(testBreeds)
-)
+val mockApi = MockDogApiClient(breeds = testBreeds)
 ```
 
 ## Contributing

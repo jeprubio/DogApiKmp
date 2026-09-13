@@ -15,6 +15,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.rumosoft.librarydogapi.DogApiClient
+import com.rumosoft.librarydogapi.DogApiError
 import dogapikmp.composeapp.generated.resources.Res
 import dogapikmp.composeapp.generated.resources.ic_arrow_back
 import io.github.aakira.napier.Napier
@@ -33,17 +34,16 @@ fun ListSubBreedsScreen(
     var text by remember { mutableStateOf("Loading") }
     LaunchedEffect(breed) {
         scope.launch {
-            if (breed.isNotEmpty()) {
-                dogApi.listSubBreeds(breed)
-                    .onSuccess { subBreeds ->
-                        Napier.d("JEP - result: $subBreeds")
-                        text = subBreeds.joinToString(", ")
-                    }
-                    .onFailure { error ->
-                        text = error.message ?: "error"
-                    }
+            text = if (breed.isEmpty()) {
+                "Please enter a breed"
             } else {
-                text = "Please enter a breed"
+                try {
+                    val subBreeds = dogApi.listSubBreeds(breed)
+                    Napier.d("JEP - result: $subBreeds")
+                    subBreeds.joinToString(", ")
+                } catch (error: DogApiError) {
+                    error.message ?: "error"
+                }
             }
         }
     }

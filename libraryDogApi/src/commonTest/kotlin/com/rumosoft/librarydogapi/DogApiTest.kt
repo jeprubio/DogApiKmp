@@ -1,11 +1,14 @@
 package com.rumosoft.librarydogapi
 
+import com.rumosoft.librarydogapi.models.Breed
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.result.shouldBeSuccess
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldNotBeEmpty
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -27,13 +30,11 @@ import kotlin.test.Test
 class DogApiTest {
 
     @Test
-    fun `breeds returns success with data`() = test {
+    fun `breeds returns the decoded breeds`() = test {
         dogApiMock.givenSuccess()
 
-        val results = sut.breeds()
+        val breeds = sut.breeds()
 
-        results.shouldBeSuccess()
-        val breeds = results.getOrNull().shouldNotBeNull()
         breeds.shouldNotBeEmpty()
         val breed = breeds.first()
         breed.name shouldBe "breed"
@@ -41,298 +42,219 @@ class DogApiTest {
     }
 
     @Test
-    fun `breeds returns failure on server error`() = test {
+    fun `breeds throws on server error`() = test {
         dogApiMock.givenFailure()
 
-        val results = sut.breeds()
-
-        results.shouldBeFailure()
+        shouldThrow<DogApiError> { sut.breeds() }
     }
 
     @Test
-    fun `breedImages returns success with image list`() = test {
+    fun `breedImages returns the image list`() = test {
         dogApiMock.givenSuccess()
 
-        val results = sut.breedImages("pug")
-
-        results.shouldBeSuccess()
-        results.getOrNull()?.first() shouldBe "breedImage1"
+        sut.breedImages("pug").first() shouldBe "breedImage1"
     }
 
     @Test
-    fun `breedImages returns failure on server error`() = test {
-        dogApiMock.givenFailure()
-        val results = sut.breedImages("pug")
-
-        results.shouldBeFailure()
-    }
-
-    @Test
-    fun `randomImage returns success with image URL`() = test {
-        dogApiMock.givenSuccess()
-
-        val result = sut.randomImage()
-
-        result.shouldBeSuccess()
-        result.getOrNull().shouldNotBeNull()
-    }
-
-    @Test
-    fun `randomImage returns failure on server error`() = test {
+    fun `breedImages throws on server error`() = test {
         dogApiMock.givenFailure()
 
-        val result = sut.randomImage()
-
-        result.shouldBeFailure()
+        shouldThrow<DogApiError> { sut.breedImages("pug") }
     }
 
     @Test
-    fun `randomImage for breed returns success with image URL`() = test {
+    fun `randomImage returns the image URL`() = test {
         dogApiMock.givenSuccess()
 
-        val result = sut.randomImage("pug")
-
-        result.shouldBeSuccess()
-        result.getOrNull().shouldNotBeNull()
+        sut.randomImage().shouldNotBeEmpty()
     }
 
     @Test
-    fun `randomImage for breed returns failure on server error`() = test {
+    fun `randomImage throws on server error`() = test {
         dogApiMock.givenFailure()
 
-        val result = sut.randomImage("pug")
-
-        result.shouldBeFailure()
+        shouldThrow<DogApiError> { sut.randomImage() }
     }
 
     @Test
-    fun `listSubBreeds returns success with sub-breed list`() = test {
+    fun `randomImage for breed returns the image URL`() = test {
         dogApiMock.givenSuccess()
 
-        val result = sut.listSubBreeds("hound")
+        sut.randomImage("pug").shouldNotBeEmpty()
+    }
 
-        result.shouldBeSuccess()
-        val subBreeds = result.getOrNull().shouldNotBeNull()
+    @Test
+    fun `randomImage for breed throws on server error`() = test {
+        dogApiMock.givenFailure()
+
+        shouldThrow<DogApiError> { sut.randomImage("pug") }
+    }
+
+    @Test
+    fun `listSubBreeds returns the sub-breed list`() = test {
+        dogApiMock.givenSuccess()
+
+        val subBreeds = sut.listSubBreeds("hound")
+
         subBreeds.shouldNotBeEmpty()
         subBreeds.first() shouldBe "subBreed1"
     }
 
     @Test
-    fun `listSubBreeds returns failure on server error`() = test {
+    fun `listSubBreeds throws on server error`() = test {
         dogApiMock.givenFailure()
 
-        val result = sut.listSubBreeds("hound")
-
-        result.shouldBeFailure()
+        shouldThrow<DogApiError> { sut.listSubBreeds("hound") }
     }
 
     @Test
-    fun `subBreedImages returns success with image list`() = test {
+    fun `subBreedImages returns the image list`() = test {
         dogApiMock.givenSuccess()
 
-        val result = sut.subBreedImages("hound", "afghan")
-
-        result.shouldBeSuccess()
-        result.getOrNull().shouldNotBeNull().shouldNotBeEmpty()
+        sut.subBreedImages("hound", "afghan").shouldNotBeEmpty()
     }
 
     @Test
-    fun `subBreedImages returns failure on server error`() = test {
+    fun `subBreedImages throws on server error`() = test {
         dogApiMock.givenFailure()
 
-        val result = sut.subBreedImages("hound", "afghan")
-
-        result.shouldBeFailure()
+        shouldThrow<DogApiError> { sut.subBreedImages("hound", "afghan") }
     }
 
     @Test
-    fun `server error returns HttpError with status code`() = test {
+    fun `server error throws HttpError with status code`() = test {
         dogApiMock.givenFailure()
 
-        val results = sut.breeds()
+        val error = shouldThrow<DogApiError.HttpError> { sut.breeds() }
 
-        results.shouldBeFailure()
-        val error = results.exceptionOrNull()
-        error.shouldBeInstanceOf<DogApiError.HttpError>()
         error.statusCode shouldBe HTTP_INTERNAL_SERVER_ERROR
     }
 
     @Test
-    fun `invalid breed returns InvalidBreedError`() {
-        runTest {
-            val client = HttpClient(
-                MockEngine { _ ->
-                    respond(
-                        content = "",
-                        status = HttpStatusCode.NotFound,
-                        headers = headersOf(HttpHeaders.ContentType, "application/json")
-                    )
-                }
-            ) {
-                expectSuccess = true
-                install(ContentNegotiation) {
-                    json(DogJson)
-                }
-            }
-            val api = DogApi(client)
+    fun `invalid breed throws InvalidBreedError`() = runTest {
+        val api = DogApi(notFoundClient())
 
-            val results = api.breedImages(INVALID_BREED)
+        val error = shouldThrow<DogApiError.InvalidBreedError> { api.breedImages(INVALID_BREED) }
 
-            results.shouldBeFailure()
-            val error = results.exceptionOrNull()
-            error.shouldBeInstanceOf<DogApiError.InvalidBreedError>()
-            error.breedName shouldBe INVALID_BREED
-        }
+        error.breedName shouldBe INVALID_BREED
     }
 
     @Test
-    fun `invalid breed is logged at debug level not error level`() {
-        runTest {
-            val client = HttpClient(
-                MockEngine { _ ->
-                    respond(
-                        content = "",
-                        status = HttpStatusCode.NotFound,
-                        headers = headersOf(HttpHeaders.ContentType, "application/json")
-                    )
-                }
-            ) {
-                expectSuccess = true
-                install(ContentNegotiation) {
-                    json(DogJson)
-                }
-            }
-            val logger = CapturingLogger()
-            val api = DogApi(client, logger = logger)
+    fun `invalid breed is logged at debug level not error level`() = runTest {
+        val logger = CapturingLogger()
+        val api = DogApi(notFoundClient(), logger = logger)
 
-            api.breedImages(INVALID_BREED)
+        shouldThrow<DogApiError.InvalidBreedError> { api.breedImages(INVALID_BREED) }
 
-            assertTrue(logger.errorMessages.isEmpty(), "InvalidBreedError should not be logged at error level")
-            assertTrue(
-                logger.debugMessages.any { it.contains(INVALID_BREED) },
-                "InvalidBreedError should be logged at debug level",
-            )
-        }
+        assertTrue(logger.errorMessages.isEmpty(), "InvalidBreedError should not be logged at error level")
+        assertTrue(
+            logger.debugMessages.any { it.contains(INVALID_BREED) },
+            "InvalidBreedError should be logged at debug level",
+        )
     }
 
     @Test
     fun `server error is logged at error level`() = test {
         dogApiMock.givenFailure()
 
-        sut.breeds()
+        shouldThrow<DogApiError> { sut.breeds() }
 
         assertTrue(logger.errorMessages.isNotEmpty(), "Server error should be logged at error level")
     }
 
     @Test
-    fun `invalid breed name is rejected by validation`() {
-        runTest {
-            val api = DogApi.createDefault()
+    fun `invalid breed name is rejected by validation before any request`() = runTest {
+        val api = DogApi.createDefault()
 
-            val result = api.breedImages("")
-
-            assertTrue { result.isFailure }
-            val error = result.exceptionOrNull()
-            assertTrue { error is DogApiError.InvalidBreedError }
-        }
+        shouldThrow<DogApiError.InvalidBreedError> { api.breedImages("") }
     }
 
     @Test
-    fun `network timeout returns NetworkError`() = runTest {
-        val client = httpClient(
-            MockEngine { _ ->
-                throw ConnectTimeoutException("Connection timed out")
-            }
+    fun `network timeout throws NetworkError`() = runTest {
+        val api = DogApi(httpClient(MockEngine { throw ConnectTimeoutException("Connection timed out") }))
+
+        shouldThrow<DogApiError.NetworkError> { api.breeds() }
+    }
+
+    @Test
+    fun `malformed json throws SerializationError`() = runTest {
+        val api = DogApi(
+            httpClient(
+                MockEngine { _ ->
+                    respond(
+                        content = "{ not valid json",
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentType, "application/json")
+                    )
+                }
+            )
         )
-        val api = DogApi(client)
 
-        val result = api.breeds()
-
-        result.shouldBeFailure()
-        result.exceptionOrNull().shouldBeInstanceOf<DogApiError.NetworkError>()
+        shouldThrow<DogApiError.SerializationError> { api.breeds() }
     }
 
     @Test
-    fun `malformed json returns SerializationError`() = runTest {
-        val client = httpClient(
-            MockEngine { _ ->
-                respond(
-                    content = "{ not valid json",
-                    status = HttpStatusCode.OK,
-                    headers = headersOf(HttpHeaders.ContentType, "application/json")
-                )
-            }
-        )
-        val api = DogApi(client)
-
-        val result = api.breeds()
-
-        result.shouldBeFailure()
-        result.exceptionOrNull().shouldBeInstanceOf<DogApiError.SerializationError>()
+    fun `breeds throws RemoteApiError when API status is error`() = runTest {
+        assertRemoteApiError { apiReturningApiError().breeds() }
     }
 
     @Test
-    fun `breeds returns RemoteApiError when API status is error`() = runTest {
-        val api = apiReturningApiError()
-
-        val result = api.breeds()
-
-        result.shouldBeRemoteApiError()
+    fun `randomImage throws RemoteApiError when API status is error`() = runTest {
+        assertRemoteApiError { apiReturningApiError().randomImage() }
     }
 
     @Test
-    fun `randomImage returns RemoteApiError when API status is error`() = runTest {
-        val api = apiReturningApiError()
-
-        val result = api.randomImage()
-
-        result.shouldBeRemoteApiError()
+    fun `breedImages throws RemoteApiError when API status is error`() = runTest {
+        assertRemoteApiError { apiReturningApiError().breedImages("pug") }
     }
 
     @Test
-    fun `breedImages returns RemoteApiError when API status is error`() = runTest {
-        val api = apiReturningApiError()
-
-        val result = api.breedImages("pug")
-
-        result.shouldBeRemoteApiError()
+    fun `listSubBreeds throws RemoteApiError when API status is error`() = runTest {
+        assertRemoteApiError { apiReturningApiError().listSubBreeds("hound") }
     }
 
     @Test
-    fun `listSubBreeds returns RemoteApiError when API status is error`() = runTest {
-        val api = apiReturningApiError()
+    fun `unexpected exception throws UnknownError`() = runTest {
+        val api = DogApi(httpClient(MockEngine { throw IllegalStateException("Unexpected test failure") }))
 
-        val result = api.listSubBreeds("hound")
+        shouldThrow<DogApiError.UnknownError> { api.breeds() }
+    }
 
-        result.shouldBeRemoteApiError()
+    /**
+     * The public contract deliberately does not return `kotlin.Result`, because Kotlin/Native
+     * erases inline value classes to `Any?` when exporting to Objective-C, which would strip
+     * every type from the Swift API. Kotlin callers who want a `Result` wrap the call instead —
+     * this test pins that documented migration path.
+     */
+    @Test
+    fun `runCatching gives Kotlin callers a Result over the throwing API`() = test {
+        dogApiMock.givenSuccess()
+
+        val success: Result<List<Breed>> = runCatching { sut.breeds() }
+
+        success.shouldBeSuccess()
+        success.getOrNull().shouldNotBeNull().shouldNotBeEmpty()
+
+        dogApiMock.givenFailure()
+
+        val failure = runCatching { sut.breeds() }
+
+        failure.shouldBeFailure()
+        failure.exceptionOrNull().shouldBeInstanceOf<DogApiError.HttpError>()
     }
 
     @Test
-    fun `unexpected exception returns UnknownError`() = runTest {
-        val client = httpClient(
-            MockEngine { _ ->
-                throw IllegalStateException("Unexpected test failure")
-            }
-        )
-        val api = DogApi(client)
-
-        val result = api.breeds()
-
-        result.shouldBeFailure()
-        result.exceptionOrNull().shouldBeInstanceOf<DogApiError.UnknownError>()
-    }
-
-    @Test
-    fun `cancellation propagates instead of returning a failed Result`() = runTest {
+    fun `cancellation propagates instead of surfacing as a DogApiError`() = runTest {
         val requestStarted = CompletableDeferred<Unit>()
         val api = DogApi(neverRespondingClient(requestStarted))
         var reachedCodeAfterCall = false
 
         val job = launch {
+            // Called bare on purpose: wrapping this in runCatching would swallow the
+            // CancellationException in the *test* and hide what we are asserting.
             api.breeds()
-            // Only reachable if breeds() returned normally instead of rethrowing
-            // CancellationException, which would mean the calling coroutine keeps
-            // running after it was cancelled.
+            // Only reachable if the cancellation was swallowed somewhere below, which would mean
+            // the calling coroutine keeps running after it was cancelled.
             reachedCodeAfterCall = true
         }
         requestStarted.await()
@@ -341,7 +263,33 @@ class DogApiTest {
 
         assertFalse(
             reachedCodeAfterCall,
-            "breeds() must rethrow CancellationException, not map it to a failed Result",
+            "CancellationException must keep propagating, not be mapped to a DogApiError",
+        )
+    }
+
+    /**
+     * `runCatching` is the documented way for Kotlin callers to get a `Result`, but it catches
+     * `CancellationException` too. This test pins that caveat so the README keeps warning about
+     * it: inside a cancellable scope, catch [DogApiError] explicitly instead.
+     */
+    @Test
+    fun `runCatching around the API also catches cancellation`() = runTest {
+        val requestStarted = CompletableDeferred<Unit>()
+        val api = DogApi(neverRespondingClient(requestStarted))
+        var swallowedCancellation = false
+
+        val job = launch {
+            val result = runCatching { api.breeds() }
+            swallowedCancellation = result.isFailure
+        }
+        requestStarted.await()
+        job.cancel()
+        job.join()
+
+        assertTrue(
+            swallowedCancellation,
+            "runCatching is expected to swallow cancellation; if this ever stops being true, " +
+                "the README guidance about preferring try/catch can be relaxed",
         )
     }
 
@@ -395,9 +343,7 @@ class DogApiTest {
         }
         val api = DogApi(client)
 
-        val result = api.breeds()
-
-        result.shouldBeSuccess()
+        api.breeds().shouldNotBeEmpty()
         attempts shouldBe 2
     }
 
@@ -422,6 +368,23 @@ class DogApiTest {
     }
 
     private fun test(block: suspend ApiTestScope.() -> Unit) = runTest { ApiTestScope().block() }
+
+    private suspend fun assertRemoteApiError(block: suspend () -> Unit) {
+        val error = shouldThrow<DogApiError.RemoteApiError> { block() }
+        error.status shouldBe "error"
+        error.apiMessage shouldBe "Breed not found"
+    }
+
+    /** A client that answers every request with a 404 and an empty body. */
+    private fun notFoundClient(): HttpClient = httpClient(
+        MockEngine { _ ->
+            respond(
+                content = "",
+                status = HttpStatusCode.NotFound,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+    )
 
     /**
      * A client whose engine accepts the request and then never responds, so the only way the
@@ -453,13 +416,6 @@ class DogApiTest {
         return DogApi(client)
     }
 
-    private fun Result<*>.shouldBeRemoteApiError() {
-        shouldBeFailure()
-        val error = exceptionOrNull().shouldBeInstanceOf<DogApiError.RemoteApiError>()
-        error.status shouldBe "error"
-        error.apiMessage shouldBe "Breed not found"
-    }
-
     private class ApiTestScope {
         val dogApiMock = DogApiMock()
         val logger = CapturingLogger()
@@ -488,4 +444,3 @@ private class CapturingLogger : DogApiLogger {
     override fun d(msg: String) { debugMessages += msg }
     override fun e(msg: String, throwable: Throwable?) { errorMessages += msg }
 }
-

@@ -48,6 +48,9 @@ import kotlinx.serialization.json.decodeFromJsonElement
  * val api = DogApi(customClient)
  * ```
  *
+ * Every function returns its value or throws a [DogApiError]. Kotlin callers who want a
+ * `Result` can use `runCatching { api.breeds() }`; Swift callers get native `try await`.
+ *
  * For iOS developers: Use the protocol DogApiClient for dependency injection
  * to make your code more testable.
  */
@@ -112,7 +115,8 @@ public class DogApi(
         }
     }
 
-    override suspend fun breeds(): Result<List<Breed>> = safeApiCall(logger = logger) {
+    @Throws(DogApiError::class, CancellationException::class)
+    override suspend fun breeds(): List<Breed> = runApiCall(logger = logger) {
         logger.d("Fetching all breeds")
         val url = "$baseUrl/breeds/list/all"
         getAndLog<BreedsResult>(url).message.map { (breed, subBreeds) ->
@@ -120,45 +124,50 @@ public class DogApi(
         }
     }
 
-    override suspend fun randomImage(): Result<String> = safeApiCall(logger = logger) {
+    @Throws(DogApiError::class, CancellationException::class)
+    override suspend fun randomImage(): String = runApiCall(logger = logger) {
         logger.d("Fetching random image")
         val url = "$baseUrl/breeds/image/random"
         getAndLog<RandomImageResult>(url).message
     }
 
-    override suspend fun randomImage(breed: String): Result<String> {
-        BreedNameValidator.validate(breed)?.let { return Result.failure(it) }
-        return safeApiCall(breedName = breed, logger = logger) {
+    @Throws(DogApiError::class, CancellationException::class)
+    override suspend fun randomImage(breed: String): String {
+        BreedNameValidator.validate(breed)?.let { throw it }
+        return runApiCall(breedName = breed, logger = logger) {
             logger.d("Fetching random image for breed '$breed'")
             val url = "$baseUrl/breed/${breed.toPathSegment()}/images/random"
             getAndLog<RandomImageResult>(url).message
         }
     }
 
-    override suspend fun breedImages(breed: String): Result<List<String>> {
-        BreedNameValidator.validate(breed)?.let { return Result.failure(it) }
-        return safeApiCall(breedName = breed, logger = logger) {
+    @Throws(DogApiError::class, CancellationException::class)
+    override suspend fun breedImages(breed: String): List<String> {
+        BreedNameValidator.validate(breed)?.let { throw it }
+        return runApiCall(breedName = breed, logger = logger) {
             logger.d("Fetching all images for breed '$breed'")
             val url = "$baseUrl/breed/${breed.toPathSegment()}/images"
             getAndLog<BreedImagesResult>(url).message
         }
     }
 
-    override suspend fun subBreedImages(breed: String, subBreed: String): Result<List<String>> {
+    @Throws(DogApiError::class, CancellationException::class)
+    override suspend fun subBreedImages(breed: String, subBreed: String): List<String> {
         val validationError = BreedNameValidator.validate(breed)
             ?: BreedNameValidator.validate(subBreed, "sub-breed")
-        if (validationError != null) return Result.failure(validationError)
+        if (validationError != null) throw validationError
 
-        return safeApiCall(breedName = breed, logger = logger) {
+        return runApiCall(breedName = breed, logger = logger) {
             logger.d("Fetching images for sub-breed '$breed/$subBreed'")
             val url = "$baseUrl/breed/${breed.toPathSegment()}/${subBreed.toPathSegment()}/images"
             getAndLog<BreedImagesResult>(url).message
         }
     }
 
-    override suspend fun listSubBreeds(breed: String): Result<List<String>> {
-        BreedNameValidator.validate(breed)?.let { return Result.failure(it) }
-        return safeApiCall(breedName = breed, logger = logger) {
+    @Throws(DogApiError::class, CancellationException::class)
+    override suspend fun listSubBreeds(breed: String): List<String> {
+        BreedNameValidator.validate(breed)?.let { throw it }
+        return runApiCall(breedName = breed, logger = logger) {
             logger.d("Fetching sub-breeds for '$breed'")
             val url = "$baseUrl/breed/${breed.toPathSegment()}/list"
             getAndLog<SubBreedsResult>(url).message
@@ -194,25 +203,24 @@ public class DogApi(
 }
 
 /**
- * Wraps API calls with error handling, converting exceptions to typed [DogApiError] instances.
- * Returns [Result.success] or [Result.failure] for every outcome the API can produce.
+ * Runs an API call, converting any failure into a typed [DogApiError] before rethrowing it, so
+ * every exception leaving the public API is one the contract declares.
  *
- * [CancellationException] is deliberately rethrown rather than mapped: cancellation is not an
- * API failure, and swallowing it would break structured concurrency. The calling coroutine
- * would keep running after being cancelled, and on iOS a cancelled Swift `Task` would receive
- * a failed [Result] instead of surfacing cancellation. It is also not logged, since nothing
- * went wrong.
+ * [CancellationException] is deliberately rethrown untouched: cancellation is not an API
+ * failure, and mapping it would break structured concurrency. The calling coroutine would keep
+ * running after being cancelled, and on iOS a cancelled Swift `Task` would observe a thrown
+ * [DogApiError] instead of cancellation. It is also not logged, since nothing went wrong.
  *
  * @param breedName When non-null, 404 responses are mapped to [DogApiError.InvalidBreedError]
  *   and logged at debug level; all other errors are logged at error level.
  */
-private suspend inline fun <T> safeApiCall(
+private suspend inline fun <T> runApiCall(
     breedName: String? = null,
     logger: DogApiLogger = NoOpDogApiLogger,
     block: suspend () -> T,
-): Result<T> =
+): T =
     try {
-        Result.success(block())
+        block()
     } catch (cancellation: CancellationException) {
         throw cancellation
     } catch (throwable: Throwable) {
@@ -222,7 +230,7 @@ private suspend inline fun <T> safeApiCall(
         } else {
             logger.e(error.message ?: "Unknown error", throwable)
         }
-        Result.failure(error)
+        throw error
     }
 
 /**

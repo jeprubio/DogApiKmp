@@ -1,3 +1,4 @@
+import co.touchlab.skie.configuration.DefaultArgumentInterop
 import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
 
 plugins {
@@ -74,5 +75,14 @@ skie {
     isEnabled = true
     build {
         produceDistributableFramework()
+    }
+    features {
+        group {
+            // Generates Swift overloads for Kotlin default arguments, so Swift callers can write
+            // `DogApi.companion.createDefault()` and `MockDogApiClient(breeds:)` instead of
+            // having to pass every parameter explicitly.
+            DefaultArgumentInterop.Enabled(true)
+            DefaultArgumentInterop.MaximumDefaultArgumentCount(12)
+        }
     }
 }

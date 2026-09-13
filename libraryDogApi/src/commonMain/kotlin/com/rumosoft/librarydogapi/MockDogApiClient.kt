@@ -1,70 +1,80 @@
 package com.rumosoft.librarydogapi
 
 import com.rumosoft.librarydogapi.models.Breed
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Mock implementation of DogApiClient for testing purposes.
  * This is especially useful for iOS developers who want to test their code
  * without making actual network calls.
  *
+ * Each endpoint is stubbed by a pair of parameters: the value to return, or the
+ * [DogApiError] to throw. The error wins when both are supplied. An endpoint with neither
+ * throws [DogApiError.UnknownError], so an unconfigured call fails loudly instead of
+ * returning something misleading.
+ *
  * Example usage in tests:
  * ```
  * val mockApi = MockDogApiClient(
- *     breedsResult = Result.success(listOf(Breed("husky", emptyList()))),
- *     randomImageResult = Result.success("https://images.dog.ceo/breeds/husky/n02110185_1469.jpg")
+ *     breeds = listOf(Breed("husky", emptyList())),
+ *     randomImage = "https://images.dog.ceo/breeds/husky/n02110185_1469.jpg",
  * )
- * // Use mockApi in your tests
+ *
+ * val failing = MockDogApiClient(
+ *     breedsError = DogApiError.NetworkError("offline"),
+ * )
  * ```
  *
- * The two `randomImage` overloads can be configured independently:
- * [randomImageResult] backs the no-argument [randomImage], while
- * [randomImageForBreedResult] backs the breed-specific [randomImage]. When
- * [randomImageForBreedResult] is not provided, the breed-specific overload falls
- * back to [randomImageResult].
+ * The two `randomImage` overloads can be configured independently: [randomImage] backs the
+ * no-argument overload, while [randomImageForBreed] backs the breed-specific one. When
+ * [randomImageForBreed] is not provided, the breed-specific overload falls back to
+ * [randomImage].
  */
 public class MockDogApiClient(
-    private val breedsResult: Result<List<Breed>>? = null,
-    private val randomImageResult: Result<String>? = null,
-    private val randomImageForBreedResult: Result<String>? = null,
-    private val breedImagesResult: Result<List<String>>? = null,
-    private val subBreedImagesResult: Result<List<String>>? = null,
-    private val listSubBreedsResult: Result<List<String>>? = null
+    private val breeds: List<Breed>? = null,
+    private val breedsError: DogApiError? = null,
+    private val randomImage: String? = null,
+    private val randomImageError: DogApiError? = null,
+    private val randomImageForBreed: String? = null,
+    private val randomImageForBreedError: DogApiError? = null,
+    private val breedImages: List<String>? = null,
+    private val breedImagesError: DogApiError? = null,
+    private val subBreedImages: List<String>? = null,
+    private val subBreedImagesError: DogApiError? = null,
+    private val listSubBreeds: List<String>? = null,
+    private val listSubBreedsError: DogApiError? = null,
 ) : DogApiClient {
 
-    override suspend fun breeds(): Result<List<Breed>> {
-        return breedsResult ?: Result.failure(
-            DogApiError.UnknownError("Mock not configured for breeds()")
-        )
-    }
+    @Throws(DogApiError::class, CancellationException::class)
+    override suspend fun breeds(): List<Breed> =
+        stub("breeds()", breeds, breedsError)
 
-    override suspend fun randomImage(): Result<String> {
-        return randomImageResult ?: Result.failure(
-            DogApiError.UnknownError("Mock not configured for randomImage()")
-        )
-    }
+    @Throws(DogApiError::class, CancellationException::class)
+    override suspend fun randomImage(): String =
+        stub("randomImage()", randomImage, randomImageError)
 
-    override suspend fun randomImage(breed: String): Result<String> {
-        return randomImageForBreedResult ?: randomImageResult ?: Result.failure(
-            DogApiError.UnknownError("Mock not configured for randomImage(breed)")
+    @Throws(DogApiError::class, CancellationException::class)
+    override suspend fun randomImage(breed: String): String =
+        stub(
+            name = "randomImage(breed)",
+            value = randomImageForBreed ?: randomImage,
+            error = randomImageForBreedError,
         )
-    }
 
-    override suspend fun breedImages(breed: String): Result<List<String>> {
-        return breedImagesResult ?: Result.failure(
-            DogApiError.UnknownError("Mock not configured for breedImages()")
-        )
-    }
+    @Throws(DogApiError::class, CancellationException::class)
+    override suspend fun breedImages(breed: String): List<String> =
+        stub("breedImages()", breedImages, breedImagesError)
 
-    override suspend fun subBreedImages(breed: String, subBreed: String): Result<List<String>> {
-        return subBreedImagesResult ?: Result.failure(
-            DogApiError.UnknownError("Mock not configured for subBreedImages()")
-        )
-    }
+    @Throws(DogApiError::class, CancellationException::class)
+    override suspend fun subBreedImages(breed: String, subBreed: String): List<String> =
+        stub("subBreedImages()", subBreedImages, subBreedImagesError)
 
-    override suspend fun listSubBreeds(breed: String): Result<List<String>> {
-        return listSubBreedsResult ?: Result.failure(
-            DogApiError.UnknownError("Mock not configured for listSubBreeds()")
-        )
+    @Throws(DogApiError::class, CancellationException::class)
+    override suspend fun listSubBreeds(breed: String): List<String> =
+        stub("listSubBreeds()", listSubBreeds, listSubBreedsError)
+
+    private fun <T> stub(name: String, value: T?, error: DogApiError?): T {
+        error?.let { throw it }
+        return value ?: throw DogApiError.UnknownError("Mock not configured for $name")
     }
 }
-
