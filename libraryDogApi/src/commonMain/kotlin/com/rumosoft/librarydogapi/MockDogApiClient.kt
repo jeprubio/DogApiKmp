@@ -8,59 +8,50 @@ import kotlin.coroutines.cancellation.CancellationException
  * This is especially useful for iOS developers who want to test their code
  * without making actual network calls.
  *
- * Each endpoint takes the value to return or the [DogApiError] to throw; the error wins when
- * both are given, and an endpoint with neither throws [DogApiError.UnknownError]. The
- * breed-specific [randomImage] falls back to [randomImage] when [randomImageForBreed] is unset.
+ * Set [error] to make every endpoint throw. Otherwise each endpoint returns its stub, or throws
+ * [DogApiError.UnknownError] when it has none. The breed-specific [randomImage] falls back to
+ * [randomImage] when [randomImageForBreed] is unset.
  *
  * ```kotlin
  * val mockApi = MockDogApiClient(breeds = listOf(Breed("husky", emptyList())))
- * val failing = MockDogApiClient(breedsError = DogApiError.NetworkError("offline"))
+ * val failing = MockDogApiClient(error = DogApiError.NetworkError("offline"))
  * ```
+ *
+ * For finer control — one endpoint succeeding while another fails — implement [DogApiClient].
  */
 public class MockDogApiClient(
     private val breeds: List<Breed>? = null,
-    private val breedsError: DogApiError? = null,
     private val randomImage: String? = null,
-    private val randomImageError: DogApiError? = null,
     private val randomImageForBreed: String? = null,
-    private val randomImageForBreedError: DogApiError? = null,
     private val breedImages: List<String>? = null,
-    private val breedImagesError: DogApiError? = null,
     private val subBreedImages: List<String>? = null,
-    private val subBreedImagesError: DogApiError? = null,
     private val listSubBreeds: List<String>? = null,
-    private val listSubBreedsError: DogApiError? = null,
+    private val error: DogApiError? = null,
 ) : DogApiClient {
 
     @Throws(DogApiError::class, CancellationException::class)
-    override suspend fun breeds(): List<Breed> =
-        stub("breeds()", breeds, breedsError)
+    override suspend fun breeds(): List<Breed> = stub("breeds()", breeds)
 
     @Throws(DogApiError::class, CancellationException::class)
-    override suspend fun randomImage(): String =
-        stub("randomImage()", randomImage, randomImageError)
+    override suspend fun randomImage(): String = stub("randomImage()", randomImage)
 
     @Throws(DogApiError::class, CancellationException::class)
     override suspend fun randomImage(breed: String): String =
-        stub(
-            name = "randomImage(breed)",
-            value = randomImageForBreed ?: randomImage,
-            error = randomImageForBreedError,
-        )
+        stub("randomImage(breed)", randomImageForBreed ?: randomImage)
 
     @Throws(DogApiError::class, CancellationException::class)
     override suspend fun breedImages(breed: String): List<String> =
-        stub("breedImages()", breedImages, breedImagesError)
+        stub("breedImages()", breedImages)
 
     @Throws(DogApiError::class, CancellationException::class)
     override suspend fun subBreedImages(breed: String, subBreed: String): List<String> =
-        stub("subBreedImages()", subBreedImages, subBreedImagesError)
+        stub("subBreedImages()", subBreedImages)
 
     @Throws(DogApiError::class, CancellationException::class)
     override suspend fun listSubBreeds(breed: String): List<String> =
-        stub("listSubBreeds()", listSubBreeds, listSubBreedsError)
+        stub("listSubBreeds()", listSubBreeds)
 
-    private fun <T> stub(name: String, value: T?, error: DogApiError?): T {
+    private fun <T> stub(name: String, value: T?): T {
         error?.let { throw it }
         return value ?: throw DogApiError.UnknownError("Mock not configured for $name")
     }

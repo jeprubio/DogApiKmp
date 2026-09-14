@@ -8,7 +8,7 @@ A Kotlin Multiplatform library providing easy access to the [Dog CEO API](https:
 ✅ **Type-safe** - Strongly typed APIs on Kotlin *and* Swift  
 ✅ **Typed Error Handling** - Specific error types (NetworkError, HttpError, etc.) for better error handling  
 ✅ **Testable** - Protocol-based design for easy mocking  
-✅ **iOS-friendly** - Native Swift `async throws` with typed results, plus callback patterns  
+✅ **iOS-friendly** - Native Swift `async throws` with typed results and `Task` cancellation  
 ✅ **Clean iOS surface** - Ktor stays internal, so the framework exports no Ktor types  
 ✅ **Well-documented** - Comprehensive documentation for all public APIs  
 
@@ -263,49 +263,6 @@ let task = Task {
 task.cancel()
 ```
 
-#### Using Completion Handlers (Alternative)
-
-Extension functions provide callback-based APIs. With SKIE enabled, these are exposed as native
-Swift extensions directly on the `DogApiClient` protocol.
-
-Each callback receives either a value or a `DogApiError`, never both. Each function returns a
-`Job` so you can cancel the request before it completes — for example when a view is dismissed.
-The callback is **not** invoked for a cancelled request.
-
-```swift
-import LibraryDogApi
-
-let api = DogApi.companion.createDefault()
-
-// Fetch breeds with callback — store the Job to cancel later
-let breedsJob = api.breeds { breeds, error in
-    if let error {
-        print("failed: \(error.message ?? "")")
-        return
-    }
-    for breed in breeds ?? [] {
-        print(breed.name)
-    }
-}
-
-// Random image with callback
-let imageJob = api.randomImage { imageUrl, error in
-    print(imageUrl ?? error?.message ?? "")
-}
-
-// Random image for a specific breed with callback
-let huskyJob = api.randomImageForBreed(breed: "husky") { imageUrl, error in
-    print(imageUrl ?? error?.message ?? "")
-}
-
-// Cancel any in-flight request (e.g. in deinit or onDisappear).
-// The cast is required because `cause` is an optional Kotlin type.
-breedsJob.cancel(cause: nil as KotlinCancellationException?)
-```
-
-> Prefer `async/await` where you can. It gives you cancellation through the Swift `Task` API and
-> avoids the bridged `Job` type entirely.
-
 #### Protocol-based Dependency Injection
 
 ```swift
@@ -365,10 +322,10 @@ The default implementation is `NoOpDogApiLogger`, which silently discards all ou
 
 ### MockDogApiClient
 
-A `DogApiClient` implementation for tests. Each endpoint is stubbed by a pair of parameters: the
-value to return, or the `DogApiError` to throw. The error wins when both are given, and an
-endpoint with neither throws `UnknownError` naming the endpoint, so an unconfigured call fails
-loudly rather than returning something misleading.
+A `DogApiClient` implementation for tests. Each endpoint takes the value it should return, and
+`error` makes every endpoint throw. An endpoint with no stub throws `UnknownError` naming it, so
+an unconfigured call fails loudly rather than returning something misleading. For finer control —
+one endpoint succeeding while another fails — implement `DogApiClient` directly.
 
 ```kotlin
 val mockApi = MockDogApiClient(
@@ -376,9 +333,8 @@ val mockApi = MockDogApiClient(
     randomImage = "https://example.com/dog.jpg",
 )
 
-val failing = MockDogApiClient(
-    breedsError = DogApiError.NetworkError("offline"),
-)
+// `error` makes every endpoint throw:
+val failing = MockDogApiClient(error = DogApiError.NetworkError("offline"))
 ```
 
 The two `randomImage` overloads are configured independently: `randomImage` backs the
@@ -427,9 +383,7 @@ class DogApiTest {
 
     @Test
     fun testBreedsFailure() = runTest {
-        val mockApi = MockDogApiClient(
-            breedsError = DogApiError.NetworkError("offline")
-        )
+        val mockApi = MockDogApiClient(error = DogApiError.NetworkError("offline"))
 
         assertFailsWith<DogApiError.NetworkError> { mockApi.breeds() }
     }
@@ -480,7 +434,6 @@ val api = DogApi.createDefault(baseUrl = "http://localhost:8080/api")
 - **Implementation details stay internal**: Ktor appears in no public signature, so the iOS
   framework exports no `Ktor_*` types
 - **Configurable without leaking**: `DogApiConfig` exposes timeouts, retries, base URL and logger
-- **Platform-specific extensions**: iOS callbacks in addition to suspend functions
 - **Efficient resource management**: `createDefault` shares one HttpClient process-wide
 
 ## Best Practices

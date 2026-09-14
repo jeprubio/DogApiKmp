@@ -20,7 +20,7 @@ A production-ready Kotlin Multiplatform library for accessing the Dog CEO API.
 - 🔄 Multiplatform support (Android, iOS)
 - 🎯 Type-safe APIs on Kotlin and Swift alike
 - 🧪 Fully testable with protocol-based design
-- 📱 iOS-friendly: native Swift `async throws` with typed results, plus callback patterns
+- 📱 iOS-friendly: native Swift `async throws` with typed results and `Task` cancellation
 - 📖 Comprehensive documentation
 - 🚀 Published via Maven and Swift Package Manager
 

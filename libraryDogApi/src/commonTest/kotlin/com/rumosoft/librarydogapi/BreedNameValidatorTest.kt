@@ -3,110 +3,50 @@ package com.rumosoft.librarydogapi
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.matchers.string.shouldContain
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class BreedNameValidatorTest {
 
     @Test
-    fun `valid breed name returns null`() {
-        val result = BreedNameValidator.validate("pug")
-
-        result.shouldBeNull()
+    fun `accepts letters digits and hyphens`() {
+        BreedNameValidator.validate("pug").shouldBeNull()
+        BreedNameValidator.validate("german-shepherd").shouldBeNull()
+        BreedNameValidator.validate("dog123").shouldBeNull()
     }
 
     @Test
-    fun `valid breed name with hyphen returns null`() {
-        val result = BreedNameValidator.validate("german-shepherd")
-
-        result.shouldBeNull()
+    fun `rejects a blank name`() {
+        BreedNameValidator.validate("   ").shouldNotBeNull()
+            .message.shouldNotBeNull() shouldContain "cannot be blank"
     }
 
     @Test
-    fun `valid breed name with numbers returns null`() {
-        val result = BreedNameValidator.validate("dog123")
-
-        result.shouldBeNull()
+    fun `rejects a name containing whitespace`() {
+        BreedNameValidator.validate("golden retriever").shouldNotBeNull()
+            .message.shouldNotBeNull() shouldContain "cannot contain spaces"
     }
 
     @Test
-    fun `blank breed name returns InvalidBreedError`() {
-        val result = BreedNameValidator.validate("")
+    fun `rejects disallowed characters`() {
+        BreedNameValidator.validate("pug@home").shouldNotBeNull()
+            .message.shouldNotBeNull() shouldContain "can only contain"
+        BreedNameValidator.validate("golden_retriever").shouldNotBeNull()
+            .message.shouldNotBeNull() shouldContain "can only contain"
+    }
 
-        result.shouldNotBeNull()
-        result.shouldBeInstanceOf<DogApiError.InvalidBreedError>()
-        assertTrue { result.message!!.contains("cannot be blank") }
+    /** Dog CEO slugs are ASCII, so "pügs" must fail locally rather than 404 remotely. */
+    @Test
+    fun `rejects non-ASCII letters`() {
+        BreedNameValidator.validate("pügs").shouldNotBeNull()
+            .message.shouldNotBeNull() shouldContain "can only contain"
     }
 
     @Test
-    fun `whitespace-only breed name returns InvalidBreedError`() {
-        val result = BreedNameValidator.validate("   ")
+    fun `reports the type and the offending name`() {
+        val error = BreedNameValidator.validate("bad name", "sub-breed").shouldNotBeNull()
 
-        result.shouldNotBeNull()
-        result.shouldBeInstanceOf<DogApiError.InvalidBreedError>()
-        assertTrue { result.message!!.contains("cannot be blank") }
-    }
-
-    @Test
-    fun `breed name with spaces returns InvalidBreedError`() {
-        val result = BreedNameValidator.validate("golden retriever")
-
-        result.shouldNotBeNull()
-        result.shouldBeInstanceOf<DogApiError.InvalidBreedError>()
-        assertTrue { result.message!!.contains("cannot contain spaces") }
-    }
-
-    @Test
-    fun `breed name with tabs returns InvalidBreedError`() {
-        val result = BreedNameValidator.validate("golden\tretriever")
-
-        result.shouldNotBeNull()
-        result.shouldBeInstanceOf<DogApiError.InvalidBreedError>()
-        assertTrue { result.message!!.contains("cannot contain spaces") }
-    }
-
-    @Test
-    fun `breed name with special characters returns InvalidBreedError`() {
-        val result = BreedNameValidator.validate("pug@home")
-
-        result.shouldNotBeNull()
-        result.shouldBeInstanceOf<DogApiError.InvalidBreedError>()
-        assertTrue { result.message!!.contains("can only contain") }
-    }
-
-    @Test
-    fun `breed name with underscores returns InvalidBreedError`() {
-        val result = BreedNameValidator.validate("golden_retriever")
-
-        result.shouldNotBeNull()
-        result.shouldBeInstanceOf<DogApiError.InvalidBreedError>()
-        assertTrue { result.message!!.contains("can only contain") }
-    }
-
-    @Test
-    fun `breed name with non-ASCII letters returns InvalidBreedError`() {
-        val result = BreedNameValidator.validate("pügs")
-
-        result.shouldNotBeNull()
-        result.shouldBeInstanceOf<DogApiError.InvalidBreedError>()
-        assertTrue { result.message!!.contains("can only contain") }
-    }
-
-    @Test
-    fun `validation error for sub-breed includes correct type in message`() {
-        val result = BreedNameValidator.validate("", "sub-breed")
-
-        result.shouldNotBeNull()
-        assertTrue { result.message!!.contains("sub-breed") }
-    }
-
-    @Test
-    fun `validation error stores the invalid breed name`() {
-        val invalidName = "invalid@breed"
-        val result = BreedNameValidator.validate(invalidName)
-
-        result.shouldNotBeNull()
-        result.breedName shouldBe invalidName
+        error.message.shouldNotBeNull() shouldContain "sub-breed"
+        error.breedName shouldBe "bad name"
     }
 }

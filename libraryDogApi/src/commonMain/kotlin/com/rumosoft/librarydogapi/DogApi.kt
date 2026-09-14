@@ -3,7 +3,6 @@ package com.rumosoft.librarydogapi
 import com.rumosoft.librarydogapi.models.Breed
 import com.rumosoft.librarydogapi.models.BreedImagesResult
 import com.rumosoft.librarydogapi.models.BreedsResult
-import com.rumosoft.librarydogapi.models.DogApiStatusResult
 import com.rumosoft.librarydogapi.models.RandomImageResult
 import com.rumosoft.librarydogapi.models.SubBreedsResult
 import io.ktor.client.HttpClient
@@ -23,6 +22,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -186,13 +186,19 @@ public class DogApi internal constructor(
         return DogJson.decodeFromJsonElement<T>(element)
     }
 
+    /**
+     * The Dog API reports failures in the body with `status != "success"`, and then `message`
+     * holds a string rather than the usual payload. Checking it here, before decoding into [T],
+     * turns that into a [DogApiError.RemoteApiError] instead of a confusing parse failure.
+     */
     private fun validateStatus(element: JsonElement) {
-        val statusResult = DogJson.decodeFromJsonElement<DogApiStatusResult>(element)
-        if (statusResult.status == "success") return
+        val body = element as? JsonObject ?: return
+        val status = (body["status"] as? JsonPrimitive)?.contentOrNull
+        if (status == null || status == "success") return
 
-        val apiMessage = (statusResult.message as? JsonPrimitive)?.contentOrNull
-            ?: statusResult.message?.toString()
-        throw DogApiError.RemoteApiError(status = statusResult.status, apiMessage = apiMessage)
+        val message = body["message"]
+        val apiMessage = (message as? JsonPrimitive)?.contentOrNull ?: message?.toString()
+        throw DogApiError.RemoteApiError(status = status, apiMessage = apiMessage)
     }
 }
 

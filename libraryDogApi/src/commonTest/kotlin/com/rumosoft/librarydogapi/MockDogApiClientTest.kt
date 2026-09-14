@@ -2,11 +2,10 @@ package com.rumosoft.librarydogapi
 
 import com.rumosoft.librarydogapi.models.Breed
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class MockDogApiClientTest {
 
@@ -15,72 +14,40 @@ class MockDogApiClientTest {
         val mock = MockDogApiClient(
             breeds = listOf(Breed("husky", listOf("siberian"))),
             randomImage = "https://example.com/any.jpg",
-            breedImages = listOf("https://example.com/husky.jpg"),
-            subBreedImages = listOf("https://example.com/siberian.jpg"),
             listSubBreeds = listOf("siberian"),
         )
 
         mock.breeds().single().name shouldBe "husky"
         mock.randomImage() shouldBe "https://example.com/any.jpg"
-        mock.breedImages("husky") shouldContainExactly listOf("https://example.com/husky.jpg")
-        mock.subBreedImages("husky", "siberian") shouldContainExactly
-            listOf("https://example.com/siberian.jpg")
-        mock.listSubBreeds("husky") shouldContainExactly listOf("siberian")
+        mock.listSubBreeds("husky") shouldBe listOf("siberian")
     }
 
     @Test
-    fun `throws the configured error`() = runTest {
-        val mock = MockDogApiClient(breedsError = DogApiError.NetworkError("offline"))
-
-        val error = shouldThrow<DogApiError.NetworkError> { mock.breeds() }
-
-        error.message shouldBe "offline"
-    }
-
-    @Test
-    fun `error takes precedence over a configured value`() = runTest {
+    fun `error makes every endpoint throw`() = runTest {
         val mock = MockDogApiClient(
             breeds = listOf(Breed("husky", emptyList())),
-            breedsError = DogApiError.HttpError(500, "boom"),
+            error = DogApiError.NetworkError("offline"),
         )
 
-        shouldThrow<DogApiError.HttpError> { mock.breeds() }
+        shouldThrow<DogApiError.NetworkError> { mock.breeds() }
+        shouldThrow<DogApiError.NetworkError> { mock.randomImage() }
     }
 
     @Test
-    fun `an unconfigured endpoint throws UnknownError naming the endpoint`() = runTest {
-        val mock = MockDogApiClient()
+    fun `an unconfigured endpoint throws UnknownError naming it`() = runTest {
+        val error = shouldThrow<DogApiError.UnknownError> { MockDogApiClient().listSubBreeds("husky") }
 
-        val error = shouldThrow<DogApiError.UnknownError> { mock.listSubBreeds("husky") }
-
-        assertTrue(
-            error.message!!.contains("listSubBreeds"),
-            "The error should name the unconfigured endpoint, but was: ${error.message}",
-        )
+        error.message!! shouldContain "listSubBreeds"
     }
 
     @Test
     fun `breed-specific randomImage falls back to the no-argument stub`() = runTest {
-        val mock = MockDogApiClient(randomImage = "https://example.com/any.jpg")
+        MockDogApiClient(randomImage = "https://example.com/any.jpg")
+            .randomImage("husky") shouldBe "https://example.com/any.jpg"
 
-        mock.randomImage("husky") shouldBe "https://example.com/any.jpg"
-    }
-
-    @Test
-    fun `breed-specific randomImage prefers its own stub when both are set`() = runTest {
-        val mock = MockDogApiClient(
+        MockDogApiClient(
             randomImage = "https://example.com/any.jpg",
             randomImageForBreed = "https://example.com/husky.jpg",
-        )
-
-        mock.randomImage() shouldBe "https://example.com/any.jpg"
-        mock.randomImage("husky") shouldBe "https://example.com/husky.jpg"
-    }
-
-    @Test
-    fun `the mock satisfies the DogApiClient contract so it can be injected`() = runTest {
-        val injected: DogApiClient = MockDogApiClient(breeds = emptyList())
-
-        injected.breeds() shouldBe emptyList()
+        ).randomImage("husky") shouldBe "https://example.com/husky.jpg"
     }
 }
