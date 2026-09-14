@@ -7,6 +7,7 @@ import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotBeEmpty
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.ktor.client.HttpClient
@@ -245,6 +246,30 @@ class DogApiTest {
 
         DogApi(client).breeds().shouldNotBeEmpty()
         attempts shouldBe 2
+    }
+
+    @Test
+    fun `breed and sub-breed names are lower-cased into the path`() = runTest {
+        var requestedUrl: String? = null
+        val client = httpClient(
+            MockEngine { request ->
+                requestedUrl = request.url.toString()
+                respondJson("""{"message":[],"status":"success"}""")
+            }
+        )
+
+        DogApi(client, baseUrl = "https://example.com/api").subBreedImages("Hound", "Afghan")
+
+        requestedUrl shouldBe "https://example.com/api/breed/hound/afghan/images"
+    }
+
+    @Test
+    fun `an invalid sub-breed name is rejected before any request`() = runTest {
+        val error = shouldThrow<DogApiError.InvalidBreedError> {
+            DogApi.createDefault().subBreedImages("hound", "af ghan")
+        }
+
+        error.message!! shouldContain "sub-breed"
     }
 
     @Test
