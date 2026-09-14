@@ -4,30 +4,35 @@ A Kotlin Multiplatform project demonstrating how to create and publish a shared 
 
 ## 📚 Project Structure
 
-This project consists of two main modules:
+The library lives in `/libraryDogApi`. The rest is a sample app that consumes it.
 
-### `/composeApp` - Sample Application
-A Compose Multiplatform application that demonstrates how to use the Dog API library. It includes:
+### `/libraryDogApi` - the library
+A Kotlin Multiplatform library for the Dog CEO API, published for Android and iOS.
+
+### `/composeApp` - shared sample UI
+A Compose Multiplatform *library* module holding the sample screens shared by both apps:
 - Multiple screens showcasing different API endpoints
-- Navigation with Voyager
-- Shared UI code for Android and iOS
+- Navigation with Jetpack Navigation 3
 - Example integration patterns
 
-### `/libraryDogApi` - Shared Library
-A production-ready Kotlin Multiplatform library for accessing the Dog CEO API.
+### `/androidApp` - Android application
+The runnable Android app. Thin wrapper that hosts `composeApp`'s UI and initialises Napier.
 
-**✨ Features:**
+### `/iosApp` - iOS application
+The Xcode project. Hosts the same Compose UI through `MainViewController`.
+
+**✨ Library features:**
 - 🔄 Multiplatform support (Android, iOS)
 - 🎯 Type-safe APIs on Kotlin and Swift alike
 - 🧪 Fully testable with protocol-based design
 - 📱 iOS-friendly: native Swift `async throws` with typed results and `Task` cancellation
 - 📖 Comprehensive documentation
-- 🚀 Published via Maven and Swift Package Manager
+- 🚀 Publishable via Maven and Swift Package Manager (kmmbridge)
 
 **📖 [View Library Documentation →](./libraryDogApi/README.md)**
 
 ### Running the Android App
-1. In Android Studio select any android emulator and composeApp in the run configurations once synced.
+1. In Android Studio select any Android emulator and the **androidApp** run configuration once synced.
 2. Press the Play button.
 
 ### Running the iOS App
@@ -92,6 +97,10 @@ has no unit tests; its `androidTest` directory contains only a template instrume
 
 ## 📦 Using the Library
 
+> **Not published to a public repository yet.** Publish locally with
+> `./gradlew :libraryDogApi:publishToMavenLocal` and add `mavenLocal()` to the consumer's
+> repositories, or build from source.
+
 ### In Your Kotlin Project
 ```kotlin
 dependencies {
@@ -100,7 +109,8 @@ dependencies {
 ```
 
 ### In Your iOS Project
-The library is available via Swift Package Manager. See the [library documentation](./libraryDogApi/README.md) for details.
+kmmbridge's `spm()` can generate a Swift Package, but no package is published yet. For now,
+consume the framework directly from an Xcode build of this repository.
 
 ## 📖 Learn More
 

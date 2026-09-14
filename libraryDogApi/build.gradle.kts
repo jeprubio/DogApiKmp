@@ -39,6 +39,7 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "LibraryDogApi"
             isStatic = true
+            binaryOption("bundleId", "com.rumosoft.dogapi.LibraryDogApi")
         }
     }
     

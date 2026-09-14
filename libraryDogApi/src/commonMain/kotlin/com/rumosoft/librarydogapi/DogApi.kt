@@ -126,46 +126,41 @@ public class DogApi internal constructor(
     }
 
     @Throws(DogApiError::class, CancellationException::class)
-    override suspend fun randomImage(breed: String): String {
-        BreedNameValidator.validate(breed)?.let { throw it }
-        return runApiCall(breedName = breed, logger = logger) {
-            logger.d("Fetching random image for breed '$breed'")
-            val url = "$baseUrl/breed/${breed.toPathSegment()}/images/random"
-            getAndLog<RandomImageResult>(url).message
-        }
+    override suspend fun randomImage(breed: String): String = forBreed(breed) {
+        logger.d("Fetching random image for breed '$breed'")
+        getAndLog<RandomImageResult>("$baseUrl/breed/${breed.toPathSegment()}/images/random").message
     }
 
     @Throws(DogApiError::class, CancellationException::class)
-    override suspend fun breedImages(breed: String): List<String> {
-        BreedNameValidator.validate(breed)?.let { throw it }
-        return runApiCall(breedName = breed, logger = logger) {
-            logger.d("Fetching all images for breed '$breed'")
-            val url = "$baseUrl/breed/${breed.toPathSegment()}/images"
-            getAndLog<BreedImagesResult>(url).message
-        }
+    override suspend fun breedImages(breed: String): List<String> = forBreed(breed) {
+        logger.d("Fetching all images for breed '$breed'")
+        getAndLog<BreedImagesResult>("$baseUrl/breed/${breed.toPathSegment()}/images").message
     }
 
     @Throws(DogApiError::class, CancellationException::class)
-    override suspend fun subBreedImages(breed: String, subBreed: String): List<String> {
-        val validationError = BreedNameValidator.validate(breed)
-            ?: BreedNameValidator.validate(subBreed, "sub-breed")
-        if (validationError != null) throw validationError
-
-        return runApiCall(breedName = breed, logger = logger) {
+    override suspend fun subBreedImages(breed: String, subBreed: String): List<String> =
+        forBreed(breed, subBreed) {
             logger.d("Fetching images for sub-breed '$breed/$subBreed'")
             val url = "$baseUrl/breed/${breed.toPathSegment()}/${subBreed.toPathSegment()}/images"
             getAndLog<BreedImagesResult>(url).message
         }
-    }
 
     @Throws(DogApiError::class, CancellationException::class)
-    override suspend fun listSubBreeds(breed: String): List<String> {
-        BreedNameValidator.validate(breed)?.let { throw it }
-        return runApiCall(breedName = breed, logger = logger) {
-            logger.d("Fetching sub-breeds for '$breed'")
-            val url = "$baseUrl/breed/${breed.toPathSegment()}/list"
-            getAndLog<SubBreedsResult>(url).message
-        }
+    override suspend fun listSubBreeds(breed: String): List<String> = forBreed(breed) {
+        logger.d("Fetching sub-breeds for '$breed'")
+        getAndLog<SubBreedsResult>("$baseUrl/breed/${breed.toPathSegment()}/list").message
+    }
+
+    /** Validates the names up front, then runs [block] with 404 mapped to an invalid breed. */
+    private suspend inline fun <T> forBreed(
+        breed: String,
+        subBreed: String? = null,
+        block: suspend () -> T,
+    ): T {
+        val invalid = BreedNameValidator.validate(breed)
+            ?: subBreed?.let { BreedNameValidator.validate(it, "sub-breed") }
+        invalid?.let { throw it }
+        return runApiCall(breedName = breed, logger = logger, block = block)
     }
 
     /**

@@ -4,7 +4,7 @@ A Kotlin Multiplatform library providing easy access to the [Dog CEO API](https:
 
 ## Features
 
-✅ **Multiplatform** - Works on Android, iOS, and other Kotlin platforms  
+✅ **Multiplatform** - Android and iOS (`iosArm64`, `iosSimulatorArm64`)  
 ✅ **Type-safe** - Strongly typed APIs on Kotlin *and* Swift  
 ✅ **Typed Error Handling** - Specific error types (NetworkError, HttpError, etc.) for better error handling  
 ✅ **Testable** - Protocol-based design for easy mocking  
@@ -28,7 +28,13 @@ dependencies {
 
 ### Swift Package Manager (iOS)
 
-The library is published via SPM through kmmbridge. Check your SPM configuration.
+Not published yet. The build configures kmmbridge's `spm()`, but `publishing` only targets
+`mavenLocal()`, so no Swift Package is available to depend on. For now, build the framework from
+this repository:
+
+```bash
+./gradlew :libraryDogApi:assembleLibraryDogApiXCFramework
+```
 
 ## Usage
 
@@ -160,22 +166,24 @@ val api = DogApi.createDefault(
 
 **iOS-only app (consuming the XCFramework from Swift)**
 
-`DogApiLogger` is a Kotlin interface, which Swift cannot implement directly. Create a small bridge class in the `iosMain` Kotlin source set of the library (or your own thin wrapper framework):
-
-```kotlin
-// iosMain/kotlin/com/rumosoft/librarydogapi/OSLogLogger.kt
-import platform.Foundation.NSLog
-
-class OSLogLogger : DogApiLogger {
-    override fun d(msg: String) = NSLog("[DogApi] %s", msg)
-    override fun e(msg: String, throwable: Throwable?) = NSLog("[DogApi] ERROR %s", msg)
-}
-```
-
-Then pass it from Swift:
+`DogApiLogger` is exported as an Objective-C protocol, so implement it in Swift directly — no
+Kotlin bridge class needed:
 
 ```swift
+import os
 import LibraryDogApi
+
+final class OSLogLogger: DogApiLogger {
+    private let log = OSLog(subsystem: "com.example.app", category: "DogApi")
+
+    func d(msg: String) {
+        os_log("%{public}@", log: log, type: .debug, msg)
+    }
+
+    func e(msg: String, throwable: KotlinThrowable?) {
+        os_log("%{public}@ %{public}@", log: log, type: .error, msg, throwable?.message ?? "")
+    }
+}
 
 let api = DogApi.companion.createDefault(logger: OSLogLogger())
 ```
