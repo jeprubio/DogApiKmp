@@ -10,7 +10,7 @@ android {
     }
 
     defaultConfig {
-        minSdk = 26
+        minSdk = libs.versions.android.minSdk.get().toInt()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

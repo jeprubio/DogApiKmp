@@ -72,13 +72,13 @@ public class DogApi internal constructor(
         public fun createDefault(
             baseUrl: String = DEFAULT_BASE_URL,
             logger: DogApiLogger = NoOpDogApiLogger,
-        ): DogApi = DogApi(sharedClient, baseUrl, logger)
+        ): DogApiClient = DogApi(sharedClient, baseUrl, logger)
 
         /**
          * Creates an instance with its own HttpClient. Like the shared one it lives for the rest
          * of the process, so create it once rather than per call.
          */
-        public fun create(config: DogApiConfig = DogApiConfig()): DogApi =
+        public fun create(config: DogApiConfig = DogApiConfig()): DogApiClient =
             DogApi(buildClient(config), config.baseUrl, config.logger)
 
         private fun buildClient(config: DogApiConfig): HttpClient = HttpClient {

@@ -33,7 +33,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
         }
         commonMain.dependencies {
-            implementation(project(":libraryDogApi"))
+            implementation(projects.libraryDogApi)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3.multiplatform)
@@ -48,10 +48,6 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.compose.ui.test)
-        }
-
-        androidInstrumentedTest.dependencies {
-            implementation(libs.androidx.ui.test.junit4.android)
         }
     }
 }
