@@ -8,27 +8,14 @@ import kotlin.coroutines.cancellation.CancellationException
  * This is especially useful for iOS developers who want to test their code
  * without making actual network calls.
  *
- * Each endpoint is stubbed by a pair of parameters: the value to return, or the
- * [DogApiError] to throw. The error wins when both are supplied. An endpoint with neither
- * throws [DogApiError.UnknownError], so an unconfigured call fails loudly instead of
- * returning something misleading.
+ * Each endpoint takes the value to return or the [DogApiError] to throw; the error wins when
+ * both are given, and an endpoint with neither throws [DogApiError.UnknownError]. The
+ * breed-specific [randomImage] falls back to [randomImage] when [randomImageForBreed] is unset.
  *
- * Example usage in tests:
+ * ```kotlin
+ * val mockApi = MockDogApiClient(breeds = listOf(Breed("husky", emptyList())))
+ * val failing = MockDogApiClient(breedsError = DogApiError.NetworkError("offline"))
  * ```
- * val mockApi = MockDogApiClient(
- *     breeds = listOf(Breed("husky", emptyList())),
- *     randomImage = "https://images.dog.ceo/breeds/husky/n02110185_1469.jpg",
- * )
- *
- * val failing = MockDogApiClient(
- *     breedsError = DogApiError.NetworkError("offline"),
- * )
- * ```
- *
- * The two `randomImage` overloads can be configured independently: [randomImage] backs the
- * no-argument overload, while [randomImageForBreed] backs the breed-specific one. When
- * [randomImageForBreed] is not provided, the breed-specific overload falls back to
- * [randomImage].
  */
 public class MockDogApiClient(
     private val breeds: List<Breed>? = null,

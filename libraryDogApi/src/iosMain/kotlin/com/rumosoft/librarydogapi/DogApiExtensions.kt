@@ -7,57 +7,37 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /**
- * iOS-friendly extension functions that provide callback-based APIs
- * in addition to the suspend function APIs.
+ * Callback-based wrappers around [DogApiClient] for Swift callers who cannot use async/await.
  *
- * **Prefer async/await** — With SKIE enabled, all suspend functions on [DogApiClient] are
- * bridged to Swift's native `async/await`, throw a catchable [DogApiError], and can be
- * cancelled via the Swift `Task` API. These callback extensions are provided for cases where
- * async/await is not available or convenient.
- *
- * Each callback receives either a value or a [DogApiError], never both:
+ * Every callback runs on the main thread and receives either a value or a [DogApiError], never
+ * both. Every function returns a [Job]; cancelling it aborts the request and the callback is
+ * then never invoked.
  *
  * ```swift
  * let job = api.breeds { breeds, error in
- *     if let error { print("failed: \(error.message ?? "")"); return }
+ *     if let error { print(error.message ?? ""); return }
  *     print(breeds ?? [])
  * }
+ * job.cancel(cause: nil as KotlinCancellationException?)
  * ```
  *
- * **Cancellation:** each function returns a [Job]. Call `job.cancel(cause: nil)` to cancel the
- * in-flight request before it completes — for example when the view is dismissed. The callback
- * is **not** invoked when the request is cancelled.
+ * Prefer async/await where available: SKIE bridges the suspend functions natively and gives
+ * cancellation through the Swift `Task` API, avoiding the bridged [Job] entirely.
  */
 
-/**
- * Fetches all breeds with a completion handler.
- * @param onComplete Callback invoked with the breeds, or with a [DogApiError] on failure.
- *   Called on the main thread. Not called if the returned [Job] is cancelled.
- * @return A [Job] that can be cancelled to abort the request.
- */
+/** Fetches all breeds. */
 public fun DogApiClient.breeds(onComplete: (List<Breed>?, DogApiError?) -> Unit): Job =
     CoroutineScope(Dispatchers.Main).launch {
         complete(onComplete) { breeds() }
     }
 
-/**
- * Fetches a random image with a completion handler.
- * @param onComplete Callback invoked with the image URL, or with a [DogApiError] on failure.
- *   Called on the main thread. Not called if the returned [Job] is cancelled.
- * @return A [Job] that can be cancelled to abort the request.
- */
+/** Fetches a random image from any breed. */
 public fun DogApiClient.randomImage(onComplete: (String?, DogApiError?) -> Unit): Job =
     CoroutineScope(Dispatchers.Main).launch {
         complete(onComplete) { randomImage() }
     }
 
-/**
- * Fetches a random image for a breed with a completion handler.
- * @param breed The breed name.
- * @param onComplete Callback invoked with the image URL, or with a [DogApiError] on failure.
- *   Called on the main thread. Not called if the returned [Job] is cancelled.
- * @return A [Job] that can be cancelled to abort the request.
- */
+/** Fetches a random image for [breed]. */
 public fun DogApiClient.randomImageForBreed(
     breed: String,
     onComplete: (String?, DogApiError?) -> Unit,
@@ -66,13 +46,7 @@ public fun DogApiClient.randomImageForBreed(
         complete(onComplete) { randomImage(breed) }
     }
 
-/**
- * Fetches all images for a breed with a completion handler.
- * @param breed The breed name.
- * @param onComplete Callback invoked with the image URLs, or with a [DogApiError] on failure.
- *   Called on the main thread. Not called if the returned [Job] is cancelled.
- * @return A [Job] that can be cancelled to abort the request.
- */
+/** Fetches all images for [breed]. */
 public fun DogApiClient.breedImages(
     breed: String,
     onComplete: (List<String>?, DogApiError?) -> Unit,
@@ -81,14 +55,7 @@ public fun DogApiClient.breedImages(
         complete(onComplete) { breedImages(breed) }
     }
 
-/**
- * Fetches all images for a sub-breed with a completion handler.
- * @param breed The breed name.
- * @param subBreed The sub-breed name.
- * @param onComplete Callback invoked with the image URLs, or with a [DogApiError] on failure.
- *   Called on the main thread. Not called if the returned [Job] is cancelled.
- * @return A [Job] that can be cancelled to abort the request.
- */
+/** Fetches all images for [subBreed] of [breed]. */
 public fun DogApiClient.subBreedImages(
     breed: String,
     subBreed: String,
@@ -98,13 +65,7 @@ public fun DogApiClient.subBreedImages(
         complete(onComplete) { subBreedImages(breed, subBreed) }
     }
 
-/**
- * Lists sub-breeds for a breed with a completion handler.
- * @param breed The breed name.
- * @param onComplete Callback invoked with the sub-breed names, or with a [DogApiError] on
- *   failure. Called on the main thread. Not called if the returned [Job] is cancelled.
- * @return A [Job] that can be cancelled to abort the request.
- */
+/** Lists the sub-breeds of [breed]. */
 public fun DogApiClient.listSubBreeds(
     breed: String,
     onComplete: (List<String>?, DogApiError?) -> Unit,
@@ -114,10 +75,8 @@ public fun DogApiClient.listSubBreeds(
     }
 
 /**
- * Runs [block] and reports the outcome through [onComplete] exactly once.
- *
- * Only [DogApiError] is caught, so a [kotlinx.coroutines.CancellationException] keeps
- * propagating and the callback is not invoked for a cancelled request.
+ * Reports the outcome of [block] through [onComplete] exactly once. Only [DogApiError] is
+ * caught, so cancellation keeps propagating and leaves the callback uncalled.
  */
 private suspend fun <T> complete(
     onComplete: (T?, DogApiError?) -> Unit,

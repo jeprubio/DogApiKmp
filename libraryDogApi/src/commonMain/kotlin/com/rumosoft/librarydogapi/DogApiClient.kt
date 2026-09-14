@@ -8,19 +8,10 @@ import kotlin.coroutines.cancellation.CancellationException
  * This allows for easy mocking and testing, especially useful for iOS developers
  * who prefer protocol-based dependency injection.
  *
- * Every function either returns its value directly or throws a [DogApiError]. This keeps the
- * contract idiomatic on both platforms:
- *
- * - **Kotlin** — wrap any call in `runCatching { }` if you prefer a `Result`:
- *   ```kotlin
- *   val result: Result<List<Breed>> = runCatching { api.breeds() }
- *   ```
- * - **Swift** — the functions arrive as native `async throws`, so `try await` and a
- *   `catch` over [DogApiError] work without any wrapper layer.
- *
- * Returning `kotlin.Result` from these functions is deliberately avoided: `Result` is an inline
- * value class, which Kotlin/Native erases to `Any?` when exporting to Objective-C. That would
- * strip every type from the Swift API.
+ * Functions return their value or throw a [DogApiError]. `kotlin.Result` is avoided on purpose:
+ * it is an inline value class, which Kotlin/Native erases to `Any?` in the Objective-C export,
+ * stripping every type from the Swift API. Kotlin callers who want one use
+ * `runCatching { api.breeds() }`.
  */
 public interface DogApiClient {
 

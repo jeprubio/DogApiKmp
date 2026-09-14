@@ -33,28 +33,19 @@ import kotlinx.serialization.json.decodeFromJsonElement
  * This class provides access to the Dog CEO API (https://dog.ceo/dog-api/).
  * It implements DogApiClient for better testability and dependency injection.
  *
- * The default implementation uses a shared HttpClient for efficiency.
- * You can also provide your own HttpClient instance for custom configuration.
+ * Use [createDefault] for the shared client, or [create] with a [DogApiConfig] for custom
+ * timeouts and retries.
  *
- * Example usage:
- * ```
+ * ```kotlin
  * val api = DogApi.createDefault()
- * val breeds = api.breeds().getOrNull()
+ * val breeds = api.breeds()
  * ```
  *
- * For custom HttpClient configuration:
- * ```
- * val customClient = HttpClient { /* your config */ }
- * val api = DogApi(customClient)
- * ```
- *
- * Every function returns its value or throws a [DogApiError]. Kotlin callers who want a
- * `Result` can use `runCatching { api.breeds() }`; Swift callers get native `try await`.
- *
- * For iOS developers: Use the protocol DogApiClient for dependency injection
- * to make your code more testable.
+ * The constructor is internal on purpose: accepting a Ktor `HttpClient` exported the whole Ktor
+ * type graph into the iOS framework. Use [DogApiConfig], or implement [DogApiClient] for
+ * anything it cannot express.
  */
-public class DogApi(
+public class DogApi internal constructor(
     private val client: HttpClient,
     baseUrl: String = DEFAULT_BASE_URL,
     private val logger: DogApiLogger = NoOpDogApiLogger,
@@ -78,40 +69,43 @@ public class DogApi(
          */
         public const val DEFAULT_MAX_RETRIES: Int = 2
 
-        /**
-         * Shared HttpClient instance used by createDefault().
-         * This client is reused across all default DogApi instances for efficiency.
-         */
-        private val sharedClient: HttpClient by lazy {
-            HttpClient {
-                expectSuccess = true  // Throw exceptions for non-2xx responses
-                install(ContentNegotiation) {
-                    json(DogJson)
-                }
-                install(HttpTimeout) {
-                    connectTimeoutMillis = DEFAULT_CONNECT_TIMEOUT_MS
-                    requestTimeoutMillis = DEFAULT_REQUEST_TIMEOUT_MS
-                    socketTimeoutMillis  = DEFAULT_SOCKET_TIMEOUT_MS
-                }
-                install(HttpRequestRetry) {
-                    retryOnExceptionOrServerErrors(maxRetries = DEFAULT_MAX_RETRIES)
-                    exponentialDelay()
-                }
-            }
-        }
+        /** Reused across all [createDefault] instances, and never closed. */
+        private val sharedClient: HttpClient by lazy { buildClient(DogApiConfig()) }
 
         /**
-         * Creates a DogApi instance with default configuration using a shared HttpClient.
+         * Creates an instance backed by the shared HttpClient.
          *
          * @param baseUrl Override the base URL (useful for testing against a local server).
-         * @param logger Optional logger. Defaults to [NoOpDogApiLogger] (silent).
-         *   Pass your own implementation to route logs to Logcat, Napier, etc.
+         * @param logger Defaults to [NoOpDogApiLogger] (silent).
          */
         public fun createDefault(
             baseUrl: String = DEFAULT_BASE_URL,
             logger: DogApiLogger = NoOpDogApiLogger,
-        ): DogApi {
-            return DogApi(sharedClient, baseUrl, logger)
+        ): DogApi = DogApi(sharedClient, baseUrl, logger)
+
+        /**
+         * Creates an instance with its own HttpClient configured by [config]. Like the shared
+         * client, it lives for the rest of the process, so create it once rather than per call.
+         */
+        public fun create(config: DogApiConfig = DogApiConfig()): DogApi =
+            DogApi(buildClient(config), config.baseUrl, config.logger)
+
+        private fun buildClient(config: DogApiConfig): HttpClient = HttpClient {
+            expectSuccess = true  // Throw exceptions for non-2xx responses
+            install(ContentNegotiation) {
+                json(DogJson)
+            }
+            install(HttpTimeout) {
+                connectTimeoutMillis = config.connectTimeoutMillis
+                requestTimeoutMillis = config.requestTimeoutMillis
+                socketTimeoutMillis  = config.socketTimeoutMillis
+            }
+            if (config.maxRetries > 0) {
+                install(HttpRequestRetry) {
+                    retryOnExceptionOrServerErrors(maxRetries = config.maxRetries)
+                    exponentialDelay()
+                }
+            }
         }
     }
 
@@ -203,16 +197,14 @@ public class DogApi(
 }
 
 /**
- * Runs an API call, converting any failure into a typed [DogApiError] before rethrowing it, so
- * every exception leaving the public API is one the contract declares.
+ * Converts any failure into a typed [DogApiError] before rethrowing, so every exception leaving
+ * the public API is one the contract declares.
  *
- * [CancellationException] is deliberately rethrown untouched: cancellation is not an API
- * failure, and mapping it would break structured concurrency. The calling coroutine would keep
- * running after being cancelled, and on iOS a cancelled Swift `Task` would observe a thrown
- * [DogApiError] instead of cancellation. It is also not logged, since nothing went wrong.
+ * [CancellationException] is rethrown untouched and unlogged: mapping it would break structured
+ * concurrency, letting a cancelled coroutine carry on as if the call had merely failed.
  *
- * @param breedName When non-null, 404 responses are mapped to [DogApiError.InvalidBreedError]
- *   and logged at debug level; all other errors are logged at error level.
+ * @param breedName When non-null, 404 responses map to [DogApiError.InvalidBreedError] and are
+ *   logged at debug level; everything else is logged at error level.
  */
 private suspend inline fun <T> runApiCall(
     breedName: String? = null,

@@ -9,6 +9,7 @@ A Kotlin Multiplatform library providing easy access to the [Dog CEO API](https:
 ✅ **Typed Error Handling** - Specific error types (NetworkError, HttpError, etc.) for better error handling  
 ✅ **Testable** - Protocol-based design for easy mocking  
 ✅ **iOS-friendly** - Native Swift `async throws` with typed results, plus callback patterns  
+✅ **Clean iOS surface** - Ktor stays internal, so the framework exports no Ktor types  
 ✅ **Well-documented** - Comprehensive documentation for all public APIs  
 
 ## Installation
@@ -94,11 +95,51 @@ val repository = BreedRepository(
 )
 ```
 
-#### Custom Base URL (for testing or alternative endpoints)
+#### Configuration
+
+`createDefault` covers the common case and reuses a process-wide HTTP client, so it needs no
+teardown:
 
 ```kotlin
-val api = DogApi.createDefault(baseUrl = "https://my-test-server.com/api")
+val api = DogApi.createDefault()
+
+// Point at an alternative endpoint or a local test server:
+val local = DogApi.createDefault(baseUrl = "https://my-test-server.com/api")
 ```
+
+For timeouts and retries, pass a `DogApiConfig` to `create`. That instance builds its own HTTP
+client, so create it once and reuse it rather than calling `create` per request:
+
+```kotlin
+val api = DogApi.create(
+    DogApiConfig(
+        requestTimeoutMillis = 5_000L,
+        maxRetries = 0,          // 0 disables retries
+    )
+)
+```
+
+| `DogApiConfig` parameter | Default |
+| --- | --- |
+| `baseUrl` | `https://dog.ceo/api` (`DogApi.DEFAULT_BASE_URL`) |
+| `logger` | `NoOpDogApiLogger` (silent) |
+| `connectTimeoutMillis` | `15_000` (`DogApi.DEFAULT_CONNECT_TIMEOUT_MS`) |
+| `requestTimeoutMillis` | `30_000` (`DogApi.DEFAULT_REQUEST_TIMEOUT_MS`) |
+| `socketTimeoutMillis` | `15_000` (`DogApi.DEFAULT_SOCKET_TIMEOUT_MS`) |
+| `maxRetries` | `2` (`DogApi.DEFAULT_MAX_RETRIES`) — retries I/O errors and 5xx only, never 4xx |
+
+From Swift the same API applies, with defaults filled in:
+
+```swift
+let api = DogApi.companion.create(
+    config: DogApiConfig(requestTimeoutMillis: 5_000, maxRetries: 0)
+)
+```
+
+> **Ktor is not part of the public API.** Passing your own `HttpClient` is not supported: it
+> exported 74 `Ktor_*` types into the iOS framework header and contradicted Ktor being an
+> `implementation` dependency. For anything `DogApiConfig` cannot express — a different engine,
+> certificate pinning, a custom Ktor plugin — implement `DogApiClient` directly.
 
 #### Logging
 
@@ -395,27 +436,37 @@ class DogApiTest {
 }
 ```
 
-### Integration Testing
+### Testing Against a Fake HTTP Layer
 
-The library includes mock engines for testing with Ktor:
+Substituting a Ktor `MockEngine` is not possible from outside the library, because `DogApi` no
+longer accepts an `HttpClient` (see [Configuration](#configuration)). Test against the interface
+instead — which is what the interface is for.
+
+Use `MockDogApiClient` for canned responses, or implement `DogApiClient` when you need
+behaviour rather than fixed values:
 
 ```kotlin
-val mockEngine = MockEngine { request ->
-    respond(
-        content = """{"message": {...}, "status": "success"}""",
-        status = HttpStatusCode.OK,
-        headers = headersOf(HttpHeaders.ContentType, "application/json")
-    )
-}
-
-val httpClient = HttpClient(mockEngine) {
-    expectSuccess = true
-    install(ContentNegotiation) {
-        json()
+class FakeDogApi(private val calls: MutableList<String> = mutableListOf()) : DogApiClient {
+    override suspend fun breeds(): List<Breed> {
+        calls += "breeds"
+        return listOf(Breed("husky", listOf("siberian")))
     }
-}
 
-val api = DogApi(httpClient)
+    override suspend fun breedImages(breed: String): List<String> {
+        calls += "breedImages($breed)"
+        if (breed == "unknown") throw DogApiError.InvalidBreedError(breed)
+        return listOf("https://example.com/$breed.jpg")
+    }
+
+    // …remaining members
+}
+```
+
+If you genuinely need to exercise the real HTTP path — for example against a local server —
+point `baseUrl` at it:
+
+```kotlin
+val api = DogApi.createDefault(baseUrl = "http://localhost:8080/api")
 ```
 
 ## Architecture
@@ -425,9 +476,12 @@ val api = DogApi(httpClient)
   value classes to `Any?` in the Objective-C export
 - **Typed errors**: Uses `DogApiError` sealed class for specific, type-safe error handling, and
   SKIE turns it into an exhaustively switchable Swift enum via `onEnum(of:)`
-- **Dependency injection friendly**: Constructor injection supported
+- **Dependency injection friendly**: depend on the `DogApiClient` interface
+- **Implementation details stay internal**: Ktor appears in no public signature, so the iOS
+  framework exports no `Ktor_*` types
+- **Configurable without leaking**: `DogApiConfig` exposes timeouts, retries, base URL and logger
 - **Platform-specific extensions**: iOS callbacks in addition to suspend functions
-- **Efficient resource management**: Uses a shared HttpClient for optimal performance
+- **Efficient resource management**: `createDefault` shares one HttpClient process-wide
 
 ## Best Practices
 
