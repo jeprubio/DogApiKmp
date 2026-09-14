@@ -1,5 +1,7 @@
 # Dog API KMP
 
+[![CI](https://github.com/jeprubio/DogApiKmp/actions/workflows/ci.yml/badge.svg)](https://github.com/jeprubio/DogApiKmp/actions/workflows/ci.yml)
+
 A Kotlin Multiplatform project demonstrating how to create and publish a shared library for Android and iOS.
 
 ## 📚 Project Structure
@@ -63,6 +65,9 @@ While iterating, narrow the run to a class or a test:
 ```
 
 Reports land in `<module>/build/reports/tests/allTests/index.html`.
+
+CI runs the library's suite on every push and pull request. The sample app's tests are not run
+there — they only exercise the example UI.
 
 Two things worth knowing. `libraryDogApi` runs its suite twice — on the JVM
 (`testAndroidHostTest`) and the iOS simulator — so both the OkHttp and Darwin engines are
