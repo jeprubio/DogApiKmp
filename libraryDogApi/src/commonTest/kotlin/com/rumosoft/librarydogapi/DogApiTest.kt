@@ -29,7 +29,7 @@ import kotlin.test.Test
 
 class DogApiTest {
 
-    // --- happy paths: one per endpoint, each exercising a distinct URL and response shape ---
+    // --- happy paths: one per endpoint, each a distinct URL and response shape ---
 
     @Test
     fun `breeds returns the decoded breeds`() = test {
@@ -77,7 +77,7 @@ class DogApiTest {
         sut.subBreedImages("hound", "afghan").shouldNotBeEmpty()
     }
 
-    // --- error mapping: one per DogApiError type, all endpoints share the same mapper ---
+    // --- error mapping: all endpoints share one mapper, so one test per error type ---
 
     @Test
     fun `server error throws HttpError with status code`() = test {
@@ -165,8 +165,7 @@ class DogApiTest {
 
         val job = launch {
             api.breeds()
-            // Only reachable if cancellation was swallowed, which would mean the calling
-            // coroutine keeps running after it was cancelled.
+            // Only reachable if cancellation was swallowed.
             reachedCodeAfterCall = true
         }
         requestStarted.await()
@@ -195,7 +194,7 @@ class DogApiTest {
 
     // --- contract and configuration ---
 
-    /** The documented way for Kotlin callers to get a `Result` from the throwing API. */
+    /** The documented way for Kotlin callers to get a `Result`. */
     @Test
     fun `runCatching turns the throwing API into a Result`() = test {
         dogApiMock.givenSuccess()
@@ -210,7 +209,7 @@ class DogApiTest {
         failure.exceptionOrNull().shouldBeInstanceOf<DogApiError.HttpError>()
     }
 
-    /** Guards against the config defaults drifting away from the published constants. */
+    /** Guards the defaults against drifting from the published constants. */
     @Test
     fun `DogApiConfig defaults match the documented constants`() {
         val config = DogApiConfig()

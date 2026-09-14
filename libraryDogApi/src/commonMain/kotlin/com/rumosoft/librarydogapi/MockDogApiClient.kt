@@ -8,16 +8,15 @@ import kotlin.coroutines.cancellation.CancellationException
  * This is especially useful for iOS developers who want to test their code
  * without making actual network calls.
  *
- * Set [error] to make every endpoint throw. Otherwise each endpoint returns its stub, or throws
- * [DogApiError.UnknownError] when it has none. The breed-specific [randomImage] falls back to
- * [randomImage] when [randomImageForBreed] is unset.
+ * Each endpoint returns its stub, or throws [DogApiError.UnknownError] when it has none. Set
+ * [error] to make every endpoint throw instead.
  *
  * ```kotlin
  * val mockApi = MockDogApiClient(breeds = listOf(Breed("husky", emptyList())))
  * val failing = MockDogApiClient(error = DogApiError.NetworkError("offline"))
  * ```
  *
- * For finer control — one endpoint succeeding while another fails — implement [DogApiClient].
+ * For finer control, implement [DogApiClient] directly.
  */
 public class MockDogApiClient(
     private val breeds: List<Breed>? = null,

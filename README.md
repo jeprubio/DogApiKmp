@@ -56,36 +56,19 @@ Or one module at a time:
 | `./gradlew :libraryDogApi:allTests` | Library tests: `DogApiTest`, `BreedNameValidatorTest`, `MockDogApiClientTest` |
 | `./gradlew :composeApp:allTests` | Compose UI tests: `MainScreenTest`, `BreedInputTest` |
 
-While iterating, narrow the run to a single class or test:
+While iterating, narrow the run to a class or a test:
 
 ```bash
-# One class
-./gradlew :libraryDogApi:iosSimulatorArm64Test \
-    --tests "com.rumosoft.librarydogapi.DogApiTest"
-
-# One test, or a group of tests by prefix
-./gradlew :libraryDogApi:iosSimulatorArm64Test \
-    --tests "com.rumosoft.librarydogapi.DogApiTest.cancellation*"
+./gradlew :libraryDogApi:iosSimulatorArm64Test --tests "com.rumosoft.librarydogapi.DogApiTest"
 ```
 
-Results are written to `<module>/build/reports/tests/allTests/index.html`, with the raw XML in
-`<module>/build/test-results/`.
+Reports land in `<module>/build/reports/tests/allTests/index.html`.
 
-#### Two things to know before you trust a green build
-
-**Which platforms actually run.** `libraryDogApi` runs its suite twice, on the JVM
-(`testAndroidHostTest`) and on the iOS simulator (`iosSimulatorArm64Test`), so both the OkHttp
-and Darwin engines are exercised. `composeApp` runs on iOS only: its Compose UI tests would need
-Robolectric to run as Android host tests, so Gradle keeps warning that `commonTest` exists
-without host tests enabled for that module. Running `iosSimulatorArm64Test` needs macOS with
-Xcode; `iosArm64` can only be compiled and linked, never executed on the host.
-
-**A `--tests` filter that matches nothing passes silently.** Kotlin/Native test tasks do not
-fail on an empty selection, so a typo in the filter reports `BUILD SUCCESSFUL` after running
-zero tests. Check the test count in the report before concluding that a change is covered.
-
-`./gradlew :androidApp:testDebugUnitTest` exists but reports `NO-SOURCE`, because `androidApp`
-has no unit tests; its `androidTest` directory contains only a template instrumented test.
+Two things worth knowing. `libraryDogApi` runs its suite twice — on the JVM
+(`testAndroidHostTest`) and the iOS simulator — so both the OkHttp and Darwin engines are
+covered; `composeApp` runs on iOS only, because its Compose tests would need Robolectric to run
+as Android host tests. And a `--tests` filter that matches nothing still reports
+`BUILD SUCCESSFUL`, so check the test count before trusting a green run.
 
 ## 📦 Using the Library
 

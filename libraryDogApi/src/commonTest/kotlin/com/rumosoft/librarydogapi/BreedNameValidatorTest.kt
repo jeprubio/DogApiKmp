@@ -35,7 +35,6 @@ class BreedNameValidatorTest {
             .message.shouldNotBeNull() shouldContain "can only contain"
     }
 
-    /** Dog CEO slugs are ASCII, so "pügs" must fail locally rather than 404 remotely. */
     @Test
     fun `rejects non-ASCII letters`() {
         BreedNameValidator.validate("pügs").shouldNotBeNull()

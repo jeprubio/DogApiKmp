@@ -1,11 +1,9 @@
 package com.rumosoft.librarydogapi
 
 /**
- * HTTP settings for [DogApi.create]. Ktor is an implementation detail, so this is how callers
- * tune the client instead of supplying one.
+ * HTTP settings for [DogApi.create], since Ktor is not exposed.
  *
- * @param maxRetries Retries for transient failures (I/O errors and 5xx). GETs are idempotent so
- *   this is safe; 4xx is never retried. Use `0` to disable.
+ * @param maxRetries Retries I/O errors and 5xx, never 4xx. Use `0` to disable.
  */
 public class DogApiConfig(
     public val baseUrl: String = DogApi.DEFAULT_BASE_URL,

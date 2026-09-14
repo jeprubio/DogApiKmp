@@ -104,49 +104,36 @@ val repository = BreedRepository(
 
 #### Configuration
 
-`createDefault` covers the common case and reuses a process-wide HTTP client, so it needs no
-teardown:
+`createDefault` reuses a process-wide HTTP client and covers the common case:
 
 ```kotlin
 val api = DogApi.createDefault()
-
-// Point at an alternative endpoint or a local test server:
 val local = DogApi.createDefault(baseUrl = "https://my-test-server.com/api")
 ```
 
-For timeouts and retries, pass a `DogApiConfig` to `create`. That instance builds its own HTTP
-client, so create it once and reuse it rather than calling `create` per request:
+For timeouts and retries, pass a `DogApiConfig` to `create`. It builds its own client, so create
+it once rather than per request:
 
 ```kotlin
-val api = DogApi.create(
-    DogApiConfig(
-        requestTimeoutMillis = 5_000L,
-        maxRetries = 0,          // 0 disables retries
-    )
-)
+val api = DogApi.create(DogApiConfig(requestTimeoutMillis = 5_000L, maxRetries = 0))
 ```
 
 | `DogApiConfig` parameter | Default |
 | --- | --- |
-| `baseUrl` | `https://dog.ceo/api` (`DogApi.DEFAULT_BASE_URL`) |
+| `baseUrl` | `https://dog.ceo/api` |
 | `logger` | `NoOpDogApiLogger` (silent) |
-| `connectTimeoutMillis` | `15_000` (`DogApi.DEFAULT_CONNECT_TIMEOUT_MS`) |
-| `requestTimeoutMillis` | `30_000` (`DogApi.DEFAULT_REQUEST_TIMEOUT_MS`) |
-| `socketTimeoutMillis` | `15_000` (`DogApi.DEFAULT_SOCKET_TIMEOUT_MS`) |
-| `maxRetries` | `2` (`DogApi.DEFAULT_MAX_RETRIES`) — retries I/O errors and 5xx only, never 4xx |
+| `connectTimeoutMillis` | `15_000` |
+| `requestTimeoutMillis` | `30_000` |
+| `socketTimeoutMillis` | `15_000` |
+| `maxRetries` | `2` — I/O errors and 5xx only, never 4xx; `0` disables |
 
-From Swift the same API applies, with defaults filled in:
+The defaults are also public constants on `DogApi` (`DEFAULT_BASE_URL`, `DEFAULT_MAX_RETRIES`,
+and so on). From Swift, `DogApi.companion.create(config: DogApiConfig(requestTimeoutMillis:
+5_000))` works the same way.
 
-```swift
-let api = DogApi.companion.create(
-    config: DogApiConfig(requestTimeoutMillis: 5_000, maxRetries: 0)
-)
-```
-
-> **Ktor is not part of the public API.** Passing your own `HttpClient` is not supported: it
-> exported 74 `Ktor_*` types into the iOS framework header and contradicted Ktor being an
-> `implementation` dependency. For anything `DogApiConfig` cannot express — a different engine,
-> certificate pinning, a custom Ktor plugin — implement `DogApiClient` directly.
+> Ktor is not part of the public API, so you cannot pass your own `HttpClient`. For anything
+> `DogApiConfig` cannot express — a different engine, certificate pinning, a custom plugin —
+> implement `DogApiClient` directly.
 
 #### Logging
 

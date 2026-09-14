@@ -33,17 +33,10 @@ import kotlinx.serialization.json.decodeFromJsonElement
  * This class provides access to the Dog CEO API (https://dog.ceo/dog-api/).
  * It implements DogApiClient for better testability and dependency injection.
  *
- * Use [createDefault] for the shared client, or [create] with a [DogApiConfig] for custom
- * timeouts and retries.
+ * Use [createDefault], or [create] with a [DogApiConfig] for custom timeouts and retries.
  *
- * ```kotlin
- * val api = DogApi.createDefault()
- * val breeds = api.breeds()
- * ```
- *
- * The constructor is internal on purpose: accepting a Ktor `HttpClient` exported the whole Ktor
- * type graph into the iOS framework. Use [DogApiConfig], or implement [DogApiClient] for
- * anything it cannot express.
+ * The constructor is internal on purpose: taking a Ktor `HttpClient` exported the whole Ktor
+ * type graph into the iOS framework.
  */
 public class DogApi internal constructor(
     private val client: HttpClient,
@@ -51,7 +44,7 @@ public class DogApi internal constructor(
     private val logger: DogApiLogger = NoOpDogApiLogger,
 ) : DogApiClient {
 
-    /** Base URL with any trailing slashes removed so path concatenation never doubles up. */
+    /** Trailing slashes removed so path concatenation never doubles up. */
     private val baseUrl: String = baseUrl.trimEnd('/')
 
     public companion object {
@@ -73,8 +66,6 @@ public class DogApi internal constructor(
         private val sharedClient: HttpClient by lazy { buildClient(DogApiConfig()) }
 
         /**
-         * Creates an instance backed by the shared HttpClient.
-         *
          * @param baseUrl Override the base URL (useful for testing against a local server).
          * @param logger Defaults to [NoOpDogApiLogger] (silent).
          */
@@ -84,8 +75,8 @@ public class DogApi internal constructor(
         ): DogApi = DogApi(sharedClient, baseUrl, logger)
 
         /**
-         * Creates an instance with its own HttpClient configured by [config]. Like the shared
-         * client, it lives for the rest of the process, so create it once rather than per call.
+         * Creates an instance with its own HttpClient. Like the shared one it lives for the rest
+         * of the process, so create it once rather than per call.
          */
         public fun create(config: DogApiConfig = DogApiConfig()): DogApi =
             DogApi(buildClient(config), config.baseUrl, config.logger)
@@ -151,7 +142,7 @@ public class DogApi internal constructor(
         getAndLog<SubBreedsResult>("$baseUrl/breed/${breed.toPathSegment()}/list").message
     }
 
-    /** Validates the names up front, then runs [block] with 404 mapped to an invalid breed. */
+    /** Validates the names, then runs [block] with 404 mapped to an invalid breed. */
     private suspend inline fun <T> forBreed(
         breed: String,
         subBreed: String? = null,
@@ -182,9 +173,8 @@ public class DogApi internal constructor(
     }
 
     /**
-     * The Dog API reports failures in the body with `status != "success"`, and then `message`
-     * holds a string rather than the usual payload. Checking it here, before decoding into [T],
-     * turns that into a [DogApiError.RemoteApiError] instead of a confusing parse failure.
+     * On failure the API puts a string in `message` where the payload goes, so this must run
+     * before decoding the body, or the error surfaces as a parse failure.
      */
     private fun validateStatus(element: JsonElement) {
         val body = element as? JsonObject ?: return
@@ -198,14 +188,12 @@ public class DogApi internal constructor(
 }
 
 /**
- * Converts any failure into a typed [DogApiError] before rethrowing, so every exception leaving
- * the public API is one the contract declares.
+ * Converts failures into a typed [DogApiError] before rethrowing.
  *
- * [CancellationException] is rethrown untouched and unlogged: mapping it would break structured
- * concurrency, letting a cancelled coroutine carry on as if the call had merely failed.
+ * [CancellationException] is rethrown untouched and unlogged: mapping it would let a cancelled
+ * coroutine carry on as if the call had merely failed.
  *
- * @param breedName When non-null, 404 responses map to [DogApiError.InvalidBreedError] and are
- *   logged at debug level; everything else is logged at error level.
+ * @param breedName When non-null, 404 maps to [DogApiError.InvalidBreedError], logged at debug.
  */
 private suspend inline fun <T> runApiCall(
     breedName: String? = null,
