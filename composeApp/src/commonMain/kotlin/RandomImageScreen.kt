@@ -11,7 +11,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.rumosoft.librarydogapi.DogApiClient
@@ -19,7 +18,6 @@ import com.rumosoft.librarydogapi.DogApiError
 import dogapikmp.composeapp.generated.resources.Res
 import dogapikmp.composeapp.generated.resources.ic_arrow_back
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,21 +28,18 @@ fun RandomImageScreen(
     modifier: Modifier = Modifier
 ) {
     var breed by remember { mutableStateOf("") }
-    val scope = rememberCoroutineScope()
     var text by remember { mutableStateOf("Loading") }
     LaunchedEffect(breed) {
-        scope.launch {
-            text = try {
-                val imageUrl = if (breed.isEmpty()) {
-                    dogApi.randomImage()
-                } else {
-                    dogApi.randomImage(breed)
-                }
-                Napier.d("JEP - result: $imageUrl")
-                imageUrl
-            } catch (error: DogApiError) {
-                error.message ?: "error"
+        text = try {
+            val imageUrl = if (breed.isEmpty()) {
+                dogApi.randomImage()
+            } else {
+                dogApi.randomImage(breed)
             }
+            Napier.d("result: $imageUrl")
+            imageUrl
+        } catch (error: DogApiError) {
+            error.message ?: "error"
         }
     }
     Scaffold(

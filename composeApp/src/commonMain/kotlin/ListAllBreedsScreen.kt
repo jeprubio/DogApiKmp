@@ -16,7 +16,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -25,7 +24,6 @@ import com.rumosoft.librarydogapi.DogApiError
 import dogapikmp.composeapp.generated.resources.Res
 import dogapikmp.composeapp.generated.resources.ic_arrow_back
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,23 +33,20 @@ fun ListAllBreedsScreen(
     dogApi: DogApiClient = createDogApiWithLogging(),
     modifier: Modifier = Modifier
 ) {
-    val scope = rememberCoroutineScope()
     var text by remember { mutableStateOf("Loading") }
     LaunchedEffect(true) {
-        scope.launch {
-            text = try {
-                val breeds = dogApi.breeds()
-                Napier.d("JEP - result: $breeds")
-                breeds.joinToString("\n") { breed ->
-                    if (breed.subBreeds.isEmpty()) {
-                        breed.name
-                    } else {
-                        "${breed.name}: ${breed.subBreeds}"
-                    }
+        text = try {
+            val breeds = dogApi.breeds()
+            Napier.d("result: $breeds")
+            breeds.joinToString("\n") { breed ->
+                if (breed.subBreeds.isEmpty()) {
+                    breed.name
+                } else {
+                    "${breed.name}: ${breed.subBreeds}"
                 }
-            } catch (error: DogApiError) {
-                error.message ?: "error"
             }
+        } catch (error: DogApiError) {
+            error.message ?: "error"
         }
     }
     Scaffold(

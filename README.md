@@ -7,7 +7,7 @@ A Kotlin Multiplatform project demonstrating how to create and publish a shared 
 The library lives in `/libraryDogApi`. The rest is a sample app that consumes it.
 
 ### `/libraryDogApi` - the library
-A Kotlin Multiplatform library for the Dog CEO API, published for Android and iOS.
+A Kotlin Multiplatform library for the Dog CEO API, targeting Android and iOS.
 
 ### `/composeApp` - shared sample UI
 A Compose Multiplatform *library* module holding the sample screens shared by both apps:
@@ -53,7 +53,7 @@ Or one module at a time:
 
 | Command | What it runs |
 | --- | --- |
-| `./gradlew :libraryDogApi:allTests` | Library tests: `DogApiTest`, `BreedNameValidatorTest` |
+| `./gradlew :libraryDogApi:allTests` | Library tests: `DogApiTest`, `BreedNameValidatorTest`, `MockDogApiClientTest` |
 | `./gradlew :composeApp:allTests` | Compose UI tests: `MainScreenTest`, `BreedInputTest` |
 
 While iterating, narrow the run to a single class or test:
@@ -73,20 +73,12 @@ Results are written to `<module>/build/reports/tests/allTests/index.html`, with 
 
 #### Two things to know before you trust a green build
 
-**The tests currently run on iOS only.** `allTests` resolves to `iosSimulatorArm64Test` and
-nothing else, because neither module enables Android host tests. Gradle reports this on every
-invocation:
-
-```
-WARNING: The 'commonTest' source directory exists, but android host tests are not enabled.
-To enable android host tests, add `withHostTest {}` to your android target configuration
-in the Gradle build file.
-```
-
-The consequence is that the shared tests never exercise the Android OkHttp engine. Adding
-`withHostTest {}` to each module's `android { }` block would run the same suite on the JVM as
-well. Running `iosSimulatorArm64Test` requires macOS with Xcode installed; the `iosArm64`
-target can only be compiled and linked, never executed on the host.
+**Which platforms actually run.** `libraryDogApi` runs its suite twice, on the JVM
+(`testAndroidHostTest`) and on the iOS simulator (`iosSimulatorArm64Test`), so both the OkHttp
+and Darwin engines are exercised. `composeApp` runs on iOS only: its Compose UI tests would need
+Robolectric to run as Android host tests, so Gradle keeps warning that `commonTest` exists
+without host tests enabled for that module. Running `iosSimulatorArm64Test` needs macOS with
+Xcode; `iosArm64` can only be compiled and linked, never executed on the host.
 
 **A `--tests` filter that matches nothing passes silently.** Kotlin/Native test tasks do not
 fail on an empty selection, so a typo in the filter reports `BUILD SUCCESSFUL` after running

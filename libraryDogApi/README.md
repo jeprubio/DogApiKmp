@@ -22,9 +22,10 @@ dependencies {
 }
 ```
 
-> The published version is defined by `libraryDogApi` in
-> `gradle/libs.versions.toml`, which is the source of truth. Use the value from
-> the latest release rather than assuming the snippet above is current.
+> Not published to a public repository yet — `publishing` only targets `mavenLocal()`. Run
+> `./gradlew :libraryDogApi:publishToMavenLocal` and add `mavenLocal()` to your repositories.
+> The version comes from `libraryDogApi` in `gradle/libs.versions.toml`, which is the source of
+> truth.
 
 ### Swift Package Manager (iOS)
 
