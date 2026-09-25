@@ -46,6 +46,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.engine.defaults)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization)
@@ -55,12 +56,6 @@ kotlin {
             implementation(libs.kotest.assertions.core)
             implementation(libs.ktor.client.mock)
             implementation(libs.kotlinx.coroutines.test)
-        }
-        androidMain.dependencies {
-            implementation(libs.ktor.client.okhttp)
-        }
-        iosMain.dependencies {
-            implementation(libs.ktor.client.darwin)
         }
     }
 }
