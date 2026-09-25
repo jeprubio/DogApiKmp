@@ -28,15 +28,21 @@ fun ListSubBreedsScreen(
     modifier: Modifier = Modifier
 ) {
     var breed by remember { mutableStateOf("") }
-    var text by remember { mutableStateOf("Loading") }
+    var text by remember { mutableStateOf("Please enter a breed") }
     LaunchedEffect(breed) {
-        text = if (breed.isEmpty()) {
+        val query = breed.trim()
+        text = if (query.isEmpty()) {
             "Please enter a breed"
         } else {
+            text = "Loading..."
             try {
-                val subBreeds = dogApi.listSubBreeds(breed)
+                val subBreeds = dogApi.listSubBreeds(query)
                 Napier.d("result: $subBreeds")
-                subBreeds.joinToString(", ")
+                if (subBreeds.isEmpty()) {
+                    "No sub-breeds found for '$query'"
+                } else {
+                    subBreeds.joinToString(", ")
+                }
             } catch (error: DogApiError) {
                 error.message ?: "error"
             }
